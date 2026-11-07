@@ -32,7 +32,7 @@ export function makeRng(seed = Date.now() ^ (Math.random() * 1e9)) {
 const VARS = ['leben', 'gold', 'punkte', 'level', 'mana', 'munition', 'xp', 'tempo', 'schaden', 'energie'];
 const ITEMS = ['Schwert', 'Schild', 'Trank', 'Bogen', 'Helm', 'Karte', 'Fackel', 'Axt', 'Ring', 'Seil'];
 const WORDS = ['Start', 'Level', 'Boss', 'Sieg', 'Pause', 'Bonus', 'Gegner', 'Ziel', 'Portal', 'Schatz'];
-const NAMES = ['Ada', 'Tom', 'Linus', 'Grace', 'Bit', 'Mia', 'Leo', 'Kai'];
+const NAMES = ['Ada', 'Sam', 'Linus', 'Grace', 'Bit', 'Mia', 'Leo', 'Kai'];
 const PHRASES = ['Bereit zum Start', 'Level geschafft', 'Neuer Highscore', 'Willkommen im Spiel', 'Boss besiegt', 'Speichern fertig', 'Ich lerne Programmieren'];
 
 const isCpp = lang => lang === 'cpp';

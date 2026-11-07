@@ -16,13 +16,13 @@ export const pythonUnits9to11 = [
         steps: [
           concept('Bauplan und Objekt',
             'Eine **Klasse** ist ein Bauplan, z. B. für Spieler. Ein **Objekt** ist ein konkretes Exemplar nach diesem Bauplan.\n\n`__init__` ist der **Konstruktor**: Er läuft beim Erzeugen und setzt die Startwerte. `self` ist das Objekt selbst. `self.hp` heißt also: die Lebenspunkte **dieses** Spielers.',
-            { code: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\ntom = Spieler("Tom")\nada = Spieler("Ada")\nada.hp = 70\nprint(tom.name, tom.hp)\nprint(ada.name, ada.hp)', console: 'Tom 100\nAda 70' }),
+            { code: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\ntom = Spieler("Alex")\nada = Spieler("Ada")\nada.hp = 70\nprint(tom.name, tom.hp)\nprint(ada.name, ada.hp)', console: 'Alex 100\nAda 70' }),
           mc('Was ist `self`?', ['Das Objekt, für das die Methode gerade läuft', 'Der Name der Klasse', 'Eine globale Variable', 'Ein Python-Modul'], 0),
           predict('Was gibt dieses Programm aus?', 'class Item:\n    def __init__(self, name, wert):\n        self.name = name\n        self.wert = wert\n\nx = Item("Trank", 5)\nprint(x.wert * 3)', '15'),
           fill('Ergänze den Konstruktor.', 'class Gegner:\n    def ⟦0⟧(self, hp):\n        ⟦1⟧.hp = hp', ['__init__', 'self'], ['__init__', 'self', 'init', 'this']),
-          write('Schreib eine Klasse `Spieler` mit `name` (Parameter) und `hp = 100`. Erzeuge `Spieler("Tom")` und gib `Tom: 100 HP` aus, über die Attribute.',
+          write('Schreib eine Klasse `Spieler` mit `name` (Parameter) und `hp = 100`. Erzeuge `Spieler("Alex")` und gib `Alex: 100 HP` aus, über die Attribute.',
             '',
-            { expect: 'Tom: 100 HP', must: [[/class\s+Spieler/, 'Lege `class Spieler:` an.'], [/def\s+__init__\s*\(\s*self/, 'Der Konstruktor heißt `__init__(self, ...)`.'], [/\.name/, 'Greif über das Objekt auf `name` zu.']], solution: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\ns = Spieler("Tom")\nprint(f"{s.name}: {s.hp} HP")' }),
+            { expect: 'Alex: 100 HP', must: [[/class\s+Spieler/, 'Lege `class Spieler:` an.'], [/def\s+__init__\s*\(\s*self/, 'Der Konstruktor heißt `__init__(self, ...)`.'], [/\.name/, 'Greif über das Objekt auf `name` zu.']], solution: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\ns = Spieler("Alex")\nprint(f"{s.name}: {s.hp} HP")' }),
         ],
       },
       {
@@ -32,12 +32,12 @@ export const pythonUnits9to11 = [
         steps: [
           concept('Fähigkeiten',
             'Eine **Methode** ist eine Funktion in einer Klasse. Sie bekommt immer zuerst `self` und kann damit die Werte des Objekts lesen und ändern.',
-            { code: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\n    def heilen(self, menge):\n        self.hp = min(100, self.hp + menge)\n\ns = Spieler("Tom")\ns.hp = 60\ns.heilen(30)\nprint(s.hp)', console: '90' }),
+            { code: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\n    def heilen(self, menge):\n        self.hp = min(100, self.hp + menge)\n\ns = Spieler("Alex")\ns.hp = 60\ns.heilen(30)\nprint(s.hp)', console: '90' }),
           predict('Was gibt dieses Programm aus?', 'class Zaehler:\n    def __init__(self):\n        self.wert = 0\n    def plus(self):\n        self.wert += 1\n\nz = Zaehler()\nz.plus()\nz.plus()\nprint(z.wert)', '2'),
           mc('Warum braucht jede Methode `self` als ersten Parameter?', ['Damit sie weiß, welches Objekt gemeint ist', 'Weil Python sonst langsam ist', 'Für den Rückgabewert', 'Das ist nur ein Kommentar'], 0),
           write('Ergänze die Klasse `Spieler` um `schaden(menge)`, die `hp` senkt, aber nie unter 0, und um `ist_besiegt()`, die `True` liefert, wenn `hp` 0 ist. Der Testcode steht schon unten.',
-            'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\n\ns = Spieler("Tom")\ns.schaden(30)\nprint(s.hp)\ns.schaden(90)\nprint(s.hp, s.ist_besiegt())\n',
-            { expect: '70\n0 True', must: [[/def\s+schaden\s*\(\s*self/, 'Lege `def schaden(self, menge):` in der Klasse an.'], [/def\s+ist_besiegt\s*\(\s*self/, 'Lege `def ist_besiegt(self):` an.']], solution: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\n    def schaden(self, menge):\n        self.hp = max(0, self.hp - menge)\n\n    def ist_besiegt(self):\n        return self.hp == 0\n\n\ns = Spieler("Tom")\ns.schaden(30)\nprint(s.hp)\ns.schaden(90)\nprint(s.hp, s.ist_besiegt())\n' }),
+            'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\n\ns = Spieler("Alex")\ns.schaden(30)\nprint(s.hp)\ns.schaden(90)\nprint(s.hp, s.ist_besiegt())\n',
+            { expect: '70\n0 True', must: [[/def\s+schaden\s*\(\s*self/, 'Lege `def schaden(self, menge):` in der Klasse an.'], [/def\s+ist_besiegt\s*\(\s*self/, 'Lege `def ist_besiegt(self):` an.']], solution: 'class Spieler:\n    def __init__(self, name):\n        self.name = name\n        self.hp = 100\n\n    def schaden(self, menge):\n        self.hp = max(0, self.hp - menge)\n\n    def ist_besiegt(self):\n        return self.hp == 0\n\n\ns = Spieler("Alex")\ns.schaden(30)\nprint(s.hp)\ns.schaden(90)\nprint(s.hp, s.ist_besiegt())\n' }),
         ],
       },
       {

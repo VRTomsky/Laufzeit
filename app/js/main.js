@@ -16,6 +16,8 @@ import { renderProjects, startProject, startChallenge } from './views/projects.j
 import { renderFriends, renderUser, renderChat } from './views/friends.js';
 import { renderAccount } from './views/account.js';
 import { initCloud } from './cloud.js';
+import { allowNavigation } from './guard.js';
+import { applyUiLang } from './i18n.js';
 
 const VIEWS = {
   pfad: renderPath,
@@ -94,9 +96,10 @@ function route() {
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 setLangHandler(route);
 store.subscribe(() => refreshStats());
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => { if (allowNavigation()) route(); });
 
 applyTheme();
+applyUiLang();
 route();
 startAutoBackup();
 getStatus();

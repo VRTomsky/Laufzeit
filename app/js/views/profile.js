@@ -92,8 +92,8 @@ function openEditor() {
       h('button', { type: 'button', class: 'btn btn-small btn-ghost', onclick: () => { draft[key] = null; paint(); } }, 'Entfernen'));
   }
 
-  const nameIn = h('input', { class: 'text-input', value: draft.name, maxlength: '40', placeholder: 'z. B. Tom', 'aria-label': 'Name' });
-  const userIn = h('input', { class: 'text-input', value: draft.username, maxlength: '20', placeholder: 'z. B. tom_codet', 'aria-label': 'Benutzername', spellcheck: 'false', autocapitalize: 'off' });
+  const nameIn = h('input', { class: 'text-input', value: draft.name, maxlength: '40', placeholder: 'z. B. Alex', 'aria-label': 'Name' });
+  const userIn = h('input', { class: 'text-input', value: draft.username, maxlength: '20', placeholder: 'z. B. alex_codet', 'aria-label': 'Benutzername', spellcheck: 'false', autocapitalize: 'off' });
   const bioIn = h('textarea', { class: 'text-input', maxlength: '160', rows: '3', placeholder: 'Was baust du gerade? Was ist dein Ziel?', 'aria-label': 'Über mich' });
   bioIn.value = draft.bio;
   const userHint = h('small', { class: 'muted' }, 'Kleinbuchstaben, Zahlen und Unterstrich, 3 bis 20 Zeichen.');

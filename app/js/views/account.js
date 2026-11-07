@@ -80,8 +80,8 @@ function renderLogin() {
 }
 
 function renderRegister() {
-  const name = input({ type: 'text', maxlength: '40', placeholder: 'z. B. Tom', autocomplete: 'given-name', value: store.state.profile.name || '' });
-  const user = input({ type: 'text', maxlength: '20', placeholder: 'z. B. tom_codet', autocapitalize: 'off', value: store.state.profile.username || '' });
+  const name = input({ type: 'text', maxlength: '40', placeholder: 'z. B. Alex', autocomplete: 'given-name', value: store.state.profile.name || '' });
+  const user = input({ type: 'text', maxlength: '20', placeholder: 'z. B. alex_codet', autocapitalize: 'off', value: store.state.profile.username || '' });
   const userHint = h('small', { class: 'muted' }, 'Damit finden dich deine Freunde. Kleinbuchstaben, Zahlen und _, 3 bis 20 Zeichen.');
   const email = input({ type: 'email', autocomplete: 'email', placeholder: 'du@beispiel.de', required: true });
   const pw = input({ type: 'password', autocomplete: 'new-password', placeholder: 'mindestens 8 Zeichen', minlength: '8', required: true });

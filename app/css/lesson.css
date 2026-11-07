@@ -12,8 +12,8 @@
   top: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: var(--s4);
+  grid-template-columns: auto auto 1fr auto;
+  gap: var(--s3);
   align-items: center;
   width: 100%;
   max-width: 1040px;
@@ -436,3 +436,24 @@ input.gap:focus { outline: none; border-style: solid; border-color: var(--accent
   .score-row { grid-template-columns: 1fr 1fr 1fr; gap: var(--s2); }
   .score > b { font-size: var(--text-lg); }
 }
+
+/* Rueckschau: vorige Fragen nur ansehen */
+.review-btn:disabled { opacity: .3; cursor: default; }
+.review-btn.is-on { color: var(--sky-ink); background: var(--sky-soft); }
+.review-banner {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--s4);
+}
+.review-banner span {
+  padding: 4px var(--s3);
+  border-radius: 999px;
+  background: var(--sky-soft);
+  color: var(--sky-ink);
+  font-weight: 800;
+  font-size: var(--text-xs);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.lesson-body [inert] { opacity: .92; }
+.review-actions { flex-wrap: wrap; justify-content: flex-end; }

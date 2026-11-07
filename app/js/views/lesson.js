@@ -1,6 +1,7 @@
 // Lektions-Runner: zeigt Schritt fuer Schritt, prueft, gibt Feedback, wiederholt Fehler, vergibt XP.
 // Modi: 'lesson' (eine Lektion), 'training' (gemischt, gewichtet), 'test' (Abschnittstest)
 
+import { setGuard, clearGuard } from '../guard.js';
 import { h, inline, formatDuration, toast, confirmDialog, shuffle } from '../util.js';
 import { icon, solidIcon } from '../icons.js';
 import { bit } from '../mascot.js';
@@ -186,8 +187,10 @@ function runSession(cfg) {
   let misses = 0;
   const comboEl = h('span', { class: 'combo', 'aria-live': 'polite' });
   const progress = h('div', { class: 'pbar', role: 'progressbar', 'aria-label': 'Fortschritt', 'aria-valuemin': '0' }, fill, comboEl);
+  const reviewBtn = h('button', { type: 'button', class: 'icon-btn review-btn', 'aria-label': 'Vorige Fragen ansehen', title: 'Vorige Fragen ansehen', html: icon('back', 24), disabled: true, onclick: () => openReview() });
   const top = h('div', { class: 'lesson-top' },
     h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Verlassen', html: icon('close', 26), onclick: leave }),
+    reviewBtn,
     progress,
     modeEl);
   const body = h('main', { class: 'lesson-body' });
@@ -196,11 +199,24 @@ function runSession(cfg) {
   const screen = h('div', { class: 'lesson', 'data-lang': cfg.lang }, top, body, foot);
   app.append(screen);
 
+  // Zurueck-Navigation (Browser-Knopf, Rechtsklick > Zurueck) fragt erst nach
+  if (!placement) setGuard();
+  // Kontextmenue in der Lektion aus, ausser in Eingabefeldern (Kopieren/Einfuegen)
+  screen.addEventListener('contextmenu', e => {
+    if (!e.target.closest('textarea, input, pre, code')) e.preventDefault();
+  });
+
   // Tastatur: Enter prueft bzw. geht weiter, Zahlentasten waehlen bei Multiple Choice
   document.addEventListener('keydown', globalKeys);
   function globalKeys(e) {
     if (!document.body.contains(screen)) { document.removeEventListener('keydown', globalKeys); return; }
     if (document.querySelector('dialog[open]')) return;
+    if (reviewing) {
+      if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); closeReview(); }
+      else if (e.key === 'ArrowLeft') reviewMove(-1);
+      else if (e.key === 'ArrowRight') reviewMove(1);
+      return;
+    }
     const t = e.target;
     const typing = t.tagName === 'TEXTAREA' || t.tagName === 'INPUT';
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
@@ -218,12 +234,14 @@ function runSession(cfg) {
     if (placement) {
       if (await confirmDialog({ title: 'Einstufung abbrechen?', text: 'Du kannst danach einfach von vorne anfangen.', ok: 'Abbrechen', cancel: 'Weitermachen', danger: true })) {
         document.removeEventListener('keydown', globalKeys);
+        clearGuard();
         cfg.onCancel?.();
       }
       return;
     }
     const started = pos > 0 || solved > 0;
     if (started && !(await confirmDialog({ title: 'Wirklich aufhören?', text: 'Dein Fortschritt in dieser Runde geht verloren. XP gibt es erst am Ende.', ok: 'Aufhören', cancel: 'Weiterlernen', danger: true }))) return;
+    clearGuard();
     location.hash = cfg.mode === 'training' ? '#/training' : '#/pfad';
   }
 
@@ -265,6 +283,7 @@ function runSession(cfg) {
 
   function footFeedback(res) {
     phase = 'feedback';
+    lastResult = res;
     foot.className = `lesson-foot ${res.ok ? 'is-ok' : 'is-bad'}`;
     footInner.innerHTML = '';
     const title = res.ok
@@ -296,6 +315,83 @@ function runSession(cfg) {
     footIdle(queue[pos].step);
     checkBtn.disabled = false;
     current.focus?.();
+  }
+
+  /* ----- Rueckschau: beantwortete Fragen nur ansehen */
+  const answered = [];          // { node, ok, title, html, kind }
+  let lastResult = null;
+  let reviewing = false;
+  let reviewIndex = 0;
+  let saved = null;
+
+  function snapshot(ok, res) {
+    const live = body.firstElementChild;
+    if (!live) return;
+    const node = live.cloneNode(true);
+    // Werte aus Eingabefeldern mitnehmen (cloneNode kopiert sie nicht)
+    const src = live.querySelectorAll('textarea, input');
+    node.querySelectorAll('textarea, input').forEach((el, i) => {
+      el.value = src[i]?.value ?? '';
+      el.readOnly = true;
+      el.tabIndex = -1;
+    });
+    node.querySelectorAll('button, [contenteditable]').forEach(el => {
+      el.disabled = true;
+      el.removeAttribute('contenteditable');
+      el.tabIndex = -1;
+    });
+    node.setAttribute('inert', '');
+    answered.push({ node, ok, title: res?.title, html: res?.html || '' });
+    reviewBtn.disabled = false;
+  }
+
+  function paintReview() {
+    const item = answered[reviewIndex];
+    body.innerHTML = '';
+    body.append(h('div', { class: 'review-banner' },
+      h('span', {}, `Frage ${reviewIndex + 1} von ${answered.length}, nur zum Ansehen`)),
+    item.node);
+    foot.className = `lesson-foot is-review ${item.ok ? 'is-ok' : 'is-bad'}`;
+    footInner.innerHTML = '';
+    footInner.append(
+      h('div', { class: 'feedback', role: 'status' },
+        h('span', { class: 'fb-icon', html: icon(item.ok ? 'check' : 'cross', 30) }),
+        h('div', { class: 'fb-text' },
+          h('h3', {}, item.ok ? 'Richtig beantwortet' : item.skipped ? 'Übersprungen' : 'Falsch beantwortet'),
+          item.html ? h('div', { class: 'feedback-detail', html: item.html }) : null)),
+      h('div', { class: 'foot-actions review-actions' },
+        h('button', { type: 'button', class: 'btn btn-ghost', disabled: reviewIndex === 0, onclick: () => reviewMove(-1) }, '‹ Vorige'),
+        h('button', { type: 'button', class: 'btn btn-ghost', disabled: reviewIndex === answered.length - 1, onclick: () => reviewMove(1) }, 'Nächste ›'),
+        h('button', { type: 'button', class: 'btn btn-sky', onclick: () => closeReview() }, 'Zurück zur Aufgabe')));
+    window.scrollTo({ top: 0 });
+  }
+
+  function openReview() {
+    if (!answered.length || reviewing || phase === 'busy') return;
+    reviewing = true;
+    saved = { body: [...body.childNodes], foot: [...footInner.childNodes], footClass: foot.className, scroll: window.scrollY };
+    reviewIndex = answered.length - 1;
+    reviewBtn.classList.add('is-on');
+    paintReview();
+  }
+
+  function reviewMove(d) {
+    const next = reviewIndex + d;
+    if (next < 0 || next >= answered.length) return;
+    reviewIndex = next;
+    paintReview();
+  }
+
+  function closeReview() {
+    if (!reviewing) return;
+    reviewing = false;
+    reviewBtn.classList.remove('is-on');
+    body.replaceChildren(...saved.body);
+    footInner.replaceChildren(...saved.foot);
+    foot.className = saved.footClass;
+    window.scrollTo({ top: saved.scroll });
+    if (phase === 'answer') setTimeout(() => current.focus?.(), 30);
+    saved = null;
   }
 
   /* ----- Ablauf */
@@ -378,12 +474,18 @@ function runSession(cfg) {
     if (phase !== 'answer') return;
     const item = queue[pos];
     record(item, false);
+    snapshot(false, { html: '' });
+    if (answered.length) answered[answered.length - 1].skipped = true;
+    lastResult = null;
     combo = 0;
     if (!placement && item.attempt < MAX_RETRIES) queue.push({ step: item.step, attempt: item.attempt + 1 });
     advance();
   }
 
   function advance() {
+    const item = queue[pos];
+    if (item && item.step.type !== 'concept' && lastResult) snapshot(lastResult.ok, lastResult);
+    lastResult = null;
     pos += 1;
     if (pos >= queue.length || stopAfter) finish();
     else show();
@@ -391,6 +493,7 @@ function runSession(cfg) {
 
   function finish() {
     document.removeEventListener('keydown', globalKeys);
+    clearGuard();
     fill.style.width = '100%';
     if (placement) {
       setTimeout(() => cfg.onDone?.(solved), 250);
