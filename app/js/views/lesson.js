@@ -10,7 +10,11 @@ import { store } from '../store.js';
 import { COURSES, findLesson, lessonStates } from '../content/index.js';
 import { completeSession, recordAnswer } from '../gamification.js';
 import { renderExercise, KIND_LABEL } from './exercises.js';
-import { generate, hasGenerators } from '../content/generators.js';
+import * as GenDe from '../content/generators.js';
+import * as GenEn from '../content/en/generators.js';
+import { isEn } from '../i18n.js';
+
+const { generate, hasGenerators } = isEn() ? GenEn : GenDe;
 
 const MAX_RETRIES = 2;
 const PRAISE = [t('Super!', 'Great!'), t('Richtig!', 'Correct!'), t('Stark!', 'Strong!'), t('Genau so!', 'Exactly!'), t('Sauber!', 'Clean!'), t('Klasse!', 'Nice!')];
