@@ -1,5 +1,6 @@
 // Code-Editor: Textfeld ueber eingefaerbtem Code, mit Zeilennummern und Auto-Einrueckung
 
+import { t, locale } from './i18n.js';
 import { h } from './util.js';
 import { highlight } from './highlight.js';
 
@@ -13,7 +14,7 @@ function insertText(ta, text) {
   }
 }
 
-export function createEditor({ value = '', lang = 'python', minLines = 6, onChange, onRun, label = 'Code-Editor' }) {
+export function createEditor({ value = '', lang = 'python', minLines = 6, onChange, onRun, label = t('Code-Editor', 'Code editor') }) {
   const gutter = h('div', { class: 'ed-gutter', 'aria-hidden': 'true' });
   const pre = h('pre', { class: 'ed-hl', 'aria-hidden': 'true' });
   const ta = h('textarea', {

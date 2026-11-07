@@ -2,6 +2,8 @@
 // Pro gewaehlter Sprache: Wissensstand und Startpunkt (mit optionalem Einstufungstest).
 // Auch fuer "Kurs hinzufuegen": dann nur die Fragen zu dieser Sprache.
 
+import { t, locale } from '../i18n.js';
+import { uiLangButton } from './uilang.js';
 import { h, dayKey, toast } from '../util.js';
 import { icon, solidIcon, levelBars, langLogo } from '../icons.js';
 import { bit } from '../mascot.js';
@@ -15,33 +17,33 @@ import { listBackups, loadBackup } from '../backup.js';
 import { GOALS as GOAL_LABEL, knowsLanguage } from '../personalize.js';
 
 const REASONS = [
-  ['school', 'school', 'Für die Schule', 'Weniger Druck im Unterricht'],
-  ['game', 'game', 'Spieleentwicklung', 'Eigene Spiele bauen, später beruflich'],
-  ['work', 'work', 'Ausbildung oder Beruf', 'Ein Skill für später'],
-  ['tool', 'tool', 'Eigene Programme', 'Tools und Apps für mich selbst'],
-  ['fun', 'heart', 'Aus Spaß', 'Einfach neugierig'],
+  ['school', 'school', t('Für die Schule', 'For school'), t('Weniger Druck im Unterricht', 'Less stress in class')],
+  ['game', 'game', t('Spieleentwicklung', 'Game development'), t('Eigene Spiele bauen, später beruflich', 'Build my own games, maybe as a job')],
+  ['work', 'work', t('Ausbildung oder Beruf', 'Training or career'), t('Ein Skill für später', 'A skill for later')],
+  ['tool', 'tool', t('Eigene Programme', 'My own programs'), t('Tools und Apps für mich selbst', 'Tools and apps for myself')],
+  ['fun', 'heart', t('Aus Spaß', 'For fun'), t('Einfach neugierig', 'Just curious')],
 ];
-const AGES = [['u13', 'Unter 13'], ['13-15', '13 bis 15'], ['16-18', '16 bis 18'], ['19+', '19 oder älter']];
+const AGES = [['u13', t('Unter 13', 'Under 13')], ['13-15', '13 bis 15'], ['16-18', '16 bis 18'], ['19+', t('19 oder älter', '19 or older')]];
 const PRIOR = [
-  ['none', 'none', 'Noch nie'],
-  ['blocks', 'blocks', 'Mit Blöcken, z. B. Scratch'],
-  ['python', 'code', 'Ein bisschen Python'],
-  ['cfamily', 'code', 'C++, C# oder Java'],
-  ['other', 'code', 'Eine andere Sprache'],
+  ['none', 'none', t('Noch nie', 'Never')],
+  ['blocks', 'blocks', t('Mit Blöcken, z. B. Scratch', 'With blocks, e.g. Scratch')],
+  ['python', 'code', t('Ein bisschen Python', 'A bit of Python')],
+  ['cfamily', 'code', t('C++, C# oder Java', 'C++, C# or Java')],
+  ['other', 'code', t('Eine andere Sprache', 'Another language')],
 ];
 const LEVELS = [
-  [1, 'Ich bin neu in {name}'],
-  [2, 'Ich kenne ein paar Befehle'],
-  [3, 'Ich kann einfache Programme schreiben'],
-  [4, 'Ich kenne Schleifen und Funktionen'],
-  [5, 'Ich bin schon fortgeschritten'],
+  [1, t('Ich bin neu in {name}', 'I\'m new to {name}')],
+  [2, t('Ich kenne ein paar Befehle', 'I know a few commands')],
+  [3, t('Ich kann einfache Programme schreiben', 'I can write simple programs')],
+  [4, t('Ich kenne Schleifen und Funktionen', 'I know loops and functions')],
+  [5, t('Ich bin schon fortgeschritten', 'I\'m already advanced')],
 ];
-const DAILY = [[10, 'Locker', '5 Min. pro Tag'], [30, 'Normal', '10 Min. pro Tag'], [50, 'Ernsthaft', '15 Min. pro Tag'], [100, 'Intensiv', '20 Min. oder mehr']];
-const SETUP = [['yes', 'Ja, alles ist installiert'], ['partly', 'Teilweise'], ['no', 'Nein oder weiß ich nicht']];
+const DAILY = [[10, t('Locker', 'Casual'), t('5 Min. pro Tag', '5 min per day')], [30, t('Normal', 'Regular'), t('10 Min. pro Tag', '10 min per day')], [50, t('Ernsthaft', 'Serious'), t('15 Min. pro Tag', '15 min per day')], [100, t('Intensiv', 'Intense'), t('20 Min. oder mehr', '20 min or more')]];
+const SETUP = [['yes', t('Ja, alles ist installiert', 'Yes, everything is installed')], ['partly', t('Teilweise', 'Partly')], ['no', t('Nein oder weiß ich nicht', 'No, or I don\'t know')]];
 
 let draft = null;
 
-const nameOf = lang => COURSES[lang]?.name || 'Programmieren';
+const nameOf = lang => COURSES[lang]?.name || t('Programmieren', 'Programming');
 const listNames = langs => langs.map(nameOf).join(' und ');
 
 /** lang = null fuer die volle Einfuehrung, sonst "Kurs hinzufuegen" */
@@ -103,7 +105,7 @@ function back() {
 
 /* ---------------------------------------------------------------- Bausteine */
 
-function frame({ bubble, hint, mood = 'happy', body, canGo, nextLabel = 'Weiter', onNext = next }) {
+function frame({ bubble, hint, mood = 'happy', body, canGo, nextLabel = t('Weiter', 'Continue'), onNext = next }) {
   const list = flow();
   const i = Math.max(0, list.indexOf(draft.step));
   const pct = Math.round((i / (list.length - 1)) * 100);
@@ -112,7 +114,7 @@ function frame({ bubble, hint, mood = 'happy', body, canGo, nextLabel = 'Weiter'
   document.body.dataset.lang = lang;
   const screen = h('div', { class: 'onb', 'data-lang': lang },
     h('header', { class: 'onb-top' },
-      h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Zurück', html: icon('chevron', 26).replace('M9 5l7 7-7 7', 'M15 5l-7 7 7 7'), onclick: back }),
+      h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('Zurück', 'Back'), html: icon('chevron', 26).replace('M9 5l7 7-7 7', 'M15 5l-7 7 7 7'), onclick: back }),
       h('div', { class: 'pbar', role: 'progressbar', 'aria-valuenow': String(pct), 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('span', { class: 'pbar-fill', style: { width: `${Math.max(pct, 3)}%` } })),
       h('span')),
     h('main', { class: 'onb-body' },
@@ -203,41 +205,42 @@ const STEPS = {
           store.importJSON(await file.text());
           applyTheme();
           draft = null;
-          toast('Sicherung geladen', 'Willkommen zurück.');
+          toast(t('Sicherung geladen', 'Backup loaded'), t('Willkommen zurück.', 'Welcome back.'));
           location.hash = '#/pfad';
         } catch (err) {
-          toast('Laden fehlgeschlagen', err.message);
+          toast(t('Laden fehlgeschlagen', 'Loading failed'), err.message);
         }
       },
     });
-    const desktopBtn = h('button', { type: 'button', class: 'btn btn-sky', hidden: true }, 'Fortschritt vom Desktop laden');
-    app.append(h('div', { class: 'onb onb-welcome' },
+    const desktopBtn = h('button', { type: 'button', class: 'btn btn-sky', hidden: true }, t('Fortschritt vom Desktop laden', 'Load progress from desktop'));
+    const langToggle = uiLangButton('onb-uilang');
+    app.append(h('div', { class: 'onb onb-welcome' }, langToggle,
       h('main', { class: 'onb-hero' },
         h('div', { class: 'onb-hero-bit', html: bit({ size: 200, mood: 'wave' }) }),
         h('p', { class: 'onb-brand' }, 'laufzeit'),
-        h('h1', {}, `Programmieren lernen. Kostenlos, ${IS_WEB ? 'im Browser' : 'lokal'}, Schritt für Schritt.`),
-        h('p', { class: 'muted' }, 'Hi, ich bin Bit. Bevor es losgeht, stelle ich dir ein paar kurze Fragen. Dann passt dein Kurs genau zu dir.'),
+        h('h1', {}, t(`Programmieren lernen. Kostenlos, ${IS_WEB ? 'im Browser' : 'lokal'}, Schritt für Schritt.`, `Learn to code. Free, ${IS_WEB ? 'in your browser' : 'on your PC'}, step by step.`)),
+        h('p', { class: 'muted' }, t('Hi, ich bin Bit. Bevor es losgeht, stelle ich dir ein paar kurze Fragen. Dann passt dein Kurs genau zu dir.', 'Hi, I\'m Bit. Before we start, I\'ll ask you a few quick questions. Then your course fits you perfectly.')),
         h('div', { class: 'onb-hero-actions' },
-          h('button', { type: 'button', class: 'btn btn-go', onclick: () => go('langs') }, 'Los geht’s'),
-          CLOUD_ENABLED ? h('a', { class: 'btn btn-sky', href: '#/konto' }, 'Ich habe schon ein Konto') : null,
+          h('button', { type: 'button', class: 'btn btn-go', onclick: () => go('langs') }, t('Los geht’s', 'Let’s go')),
+          CLOUD_ENABLED ? h('a', { class: 'btn btn-sky', href: '#/konto' }, t('Ich habe schon ein Konto', 'I already have an account')) : null,
           desktopBtn,
-          h('label', { class: 'btn btn-ghost' }, 'Sicherung aus Datei laden', fileInput)))));
+          h('label', { class: 'btn btn-ghost' }, t('Sicherung aus Datei laden', 'Load backup from file'), fileInput)))));
     // Gibt es Sicherungen auf dem Desktop? Dann die neueste direkt anbieten
     listBackups().then(res => {
       const newest = res.ok && res.files.find(f => !f.name.includes('-vorher-'));
       if (!newest || !document.body.contains(desktopBtn)) return;
-      const day = new Date(newest.name.slice(19, 29)).toLocaleDateString('de-DE');
+      const day = new Date(newest.name.slice(19, 29)).toLocaleDateString(locale());
       desktopBtn.hidden = false;
-      desktopBtn.textContent = `Fortschritt vom Desktop laden (${day})`;
+      desktopBtn.textContent = t(`Fortschritt vom Desktop laden (${day})`, `Load progress from desktop (${day})`);
       desktopBtn.onclick = async () => {
         try {
           store.importJSON(JSON.stringify(await loadBackup(newest.name)));
           applyTheme();
           draft = null;
-          toast('Willkommen zurück', `Sicherung vom ${day} geladen.`);
+          toast(t('Willkommen zurück', 'Welcome back'), t(`Sicherung vom ${day} geladen.`, `Backup from ${day} loaded.`));
           location.hash = '#/pfad';
         } catch (err) {
-          toast('Laden fehlgeschlagen', err.message);
+          toast(t('Laden fehlgeschlagen', 'Loading failed'), err.message);
         }
       };
     });
@@ -245,17 +248,17 @@ const STEPS = {
 
   langs() {
     const opts = optionList('langs', [
-      { value: 'python', title: 'Python', sub: 'Für die Schule. Der leichteste Einstieg.', art: markArt('python') },
-      { value: 'cpp', title: 'C++', sub: 'Für Spieleentwicklung und Unreal.', art: markArt('cpp') },
+      { value: 'python', title: 'Python', sub: t('Für die Schule. Der leichteste Einstieg.', 'For school. The easiest start.'), art: markArt('python') },
+      { value: 'cpp', title: 'C++', sub: t('Für Spieleentwicklung und Unreal.', 'For game development and Unreal.'), art: markArt('cpp') },
     ], { grid: true, multi: true });
-    opts.bind(frame({ bubble: 'Was möchtest du lernen?', hint: 'Du kannst auch beide wählen.', mood: 'wave', body: opts.list, canGo: draft.langs.length > 0 }));
+    opts.bind(frame({ bubble: t('Was möchtest du lernen?', 'What do you want to learn?'), hint: t('Du kannst auch beide wählen.', 'You can also pick both.'), mood: 'wave', body: opts.list, canGo: draft.langs.length > 0 }));
   },
 
   reasons() {
     const opts = optionList('reasons', REASONS.map(([value, art, title, sub]) => ({ value, title, sub, art: solidIcon(art, 34) })), { multi: true });
     opts.bind(frame({
-      bubble: `Warum lernst du ${listNames(draft.langs)}?`,
-      hint: 'Mehrere Antworten möglich. Ich markiere dir später die Abschnitte, die zu deinen Zielen passen.',
+      bubble: t(`Warum lernst du ${listNames(draft.langs)}?`, `Why are you learning ${listNames(draft.langs)}?`),
+      hint: t('Mehrere Antworten möglich. Ich markiere dir später die Abschnitte, die zu deinen Zielen passen.', 'Several answers possible. Later I\'ll mark the units that match your goals.'),
       mood: 'think', body: opts.list, canGo: draft.reasons.length > 0,
     }));
   },
@@ -263,15 +266,15 @@ const STEPS = {
   age() {
     const opts = optionList('age', AGES.map(([value, title]) => ({ value, title })));
     opts.bind(frame({
-      bubble: 'Wie alt bist du?',
-      body: h('div', {}, opts.list, h('p', { class: 'onb-note' }, 'Nur für dein Profil. Alles bleibt auf deinem PC.')),
+      bubble: t('Wie alt bist du?', 'How old are you?'),
+      body: h('div', {}, opts.list, h('p', { class: 'onb-note' }, t('Nur für dein Profil. Alles bleibt auf deinem PC.', 'Only for your profile.'))),
       canGo: Boolean(draft.age),
     }));
   },
 
   prior() {
     const opts = optionList('prior', PRIOR.map(([value, art, title]) => ({ value, title, art: solidIcon(art, 32) })), { multi: true, exclusive: ['none'] });
-    opts.bind(frame({ bubble: 'Womit hast du schon programmiert?', hint: 'Mehrere Antworten möglich.', mood: 'think', body: opts.list, canGo: draft.prior.length > 0 }));
+    opts.bind(frame({ bubble: t('Womit hast du schon programmiert?', 'What have you programmed with so far?'), hint: t('Mehrere Antworten möglich.', 'Several answers possible.'), mood: 'think', body: opts.list, canGo: draft.prior.length > 0 }));
   },
 
   level() {
@@ -279,8 +282,8 @@ const STEPS = {
     const opts = numberList(lang, LEVELS.map(([value, title]) => ({ value, title: title.replace('{name}', nameOf(lang)), art: levelBars(value, 34) })), draft.levels);
     const known = knowsLanguage(lang, draft.prior);
     opts.bind(frame({
-      bubble: `Wie viel weißt du schon über ${nameOf(lang)}?`,
-      hint: known ? `Du hast gesagt, du kennst schon ${lang === 'python' ? 'Python' : 'eine C-Sprache'}.` : null,
+      bubble: t(`Wie viel weißt du schon über ${nameOf(lang)}?`, `How much do you already know about ${nameOf(lang)}?`),
+      hint: known ? t(`Du hast gesagt, du kennst schon ${lang === 'python' ? 'Python' : 'eine C-Sprache'}.`, `You said you already know ${lang === 'python' ? 'Python' : 'a C-style language'}.`) : null,
       mood: 'think', body: opts.list, canGo: draft.levels[lang] != null,
     }));
   },
@@ -291,10 +294,10 @@ const STEPS = {
     const recommendTest = (draft.levels[lang] || 1) >= 3 || knowsLanguage(lang, draft.prior);
     const holder = { start: draft.starts[lang] ?? null };
     const opts = optionList('start', [
-      { value: 'zero', title: 'Von vorne anfangen', sub: `Mit Lektion 1.1 „${first}“.${recommendTest ? '' : ' Empfohlen für dich.'}`, art: solidIcon('restart', 44) },
-      { value: 'placement', title: 'Einstufungstest machen', sub: `Bis zu 10 Fragen, ca. 5 Minuten. Bit findet heraus, wo du einsteigst.${recommendTest ? ' Empfohlen für dich.' : ''}`, art: solidIcon('compass', 44) },
+      { value: 'zero', title: t('Von vorne anfangen', 'Start from the beginning'), sub: t(`Mit Lektion 1.1 „${first}“.${recommendTest ? '' : ' Empfohlen für dich.'}`, `With lesson 1.1 “${first}”.${recommendTest ? '' : ' Recommended for you.'}`), art: solidIcon('restart', 44) },
+      { value: 'placement', title: t('Einstufungstest machen', 'Take the placement test'), sub: t(`Bis zu 10 Fragen, ca. 5 Minuten. Bit findet heraus, wo du einsteigst.${recommendTest ? ' Empfohlen für dich.' : ''}`, `Up to 10 questions, about 5 minutes. Bit finds out where you start.${recommendTest ? ' Recommended for you.' : ''}`), art: solidIcon('compass', 44) },
     ], { grid: true, target: holder, onChange: () => { draft.starts[lang] = holder.start; } });
-    opts.bind(frame({ bubble: `Wo möchtest du in ${nameOf(lang)} anfangen?`, body: opts.list, canGo: Boolean(holder.start) }));
+    opts.bind(frame({ bubble: t(`Wo möchtest du in ${nameOf(lang)} anfangen?`, `Where do you want to start in ${nameOf(lang)}?`), body: opts.list, canGo: Boolean(holder.start) }));
   },
 
   result() {
@@ -303,17 +306,17 @@ const STEPS = {
     const placed = draft.placed[lang] || 0;
     const startUnit = units[Math.min(placed, units.length - 1)];
     const text = placed === 0
-      ? `Wir fangen bei Abschnitt 1 „${units[0].title}“ an. Die Grundlagen sitzen danach sicher.`
-      : `Du hast ${placed} ${placed === 1 ? 'Abschnitt' : 'Abschnitte'} übersprungen und startest bei Abschnitt ${placed + 1} „${startUnit.title}“.`;
+      ? t(`Wir fangen bei Abschnitt 1 „${units[0].title}“ an. Die Grundlagen sitzen danach sicher.`, `We start at unit 1 “${units[0].title}”. Afterwards the basics will be solid.`)
+      : t(`Du hast ${placed} ${placed === 1 ? 'Abschnitt' : 'Abschnitte'} übersprungen und startest bei Abschnitt ${placed + 1} „${startUnit.title}“.`, `You skipped ${placed} ${placed === 1 ? 'unit' : 'units'} and start at unit ${placed + 1} “${startUnit.title}”.`);
     frame({
-      bubble: placed === 0 ? 'Gut, dass wir gefragt haben!' : `Stark, du kannst schon einiges in ${nameOf(lang)}!`,
+      bubble: placed === 0 ? t('Gut, dass wir gefragt haben!', 'Good thing we asked!') : t(`Stark, du kannst schon einiges in ${nameOf(lang)}!`, `Nice, you already know quite a bit of ${nameOf(lang)}!`),
       mood: 'cheer',
       body: h('div', { class: 'onb-result' },
         h('div', { class: 'score-row is-two' },
-          h('div', { class: 'score is-leaf' }, h('span', {}, 'Richtig'), h('b', {}, `${placed}`)),
-          h('div', { class: 'score is-sky' }, h('span', {}, 'Dein Start'), h('b', {}, `Abschnitt ${Math.min(placed + 1, units.length)}`))),
+          h('div', { class: 'score is-leaf' }, h('span', {}, t('Richtig', 'Correct')), h('b', {}, `${placed}`)),
+          h('div', { class: 'score is-sky' }, h('span', {}, t('Dein Start', 'Your start')), h('b', {}, t(`Abschnitt ${Math.min(placed + 1, units.length)}`, `Unit ${Math.min(placed + 1, units.length)}`)))),
         h('p', {}, text),
-        placed > 0 ? h('p', { class: 'onb-note' }, 'Übersprungene Lektionen kannst du jederzeit trotzdem machen.') : null),
+        placed > 0 ? h('p', { class: 'onb-note' }, t('Übersprungene Lektionen kannst du jederzeit trotzdem machen.', 'You can still do the skipped lessons any time.')) : null),
       canGo: true,
     });
   },
@@ -321,18 +324,18 @@ const STEPS = {
   goal() {
     const opts = numberList('goal', DAILY.map(([value, title, sub]) => ({ value, title, sub, side: `${value} XP` })), draft);
     opts.bind(frame({
-      bubble: 'Wie viel Zeit willst du pro Tag investieren?',
-      body: h('div', {}, opts.list, h('p', { class: 'onb-note' }, 'Eine Lektion bringt etwa 15 bis 22 XP. Du kannst das Ziel jederzeit im Profil ändern.')),
+      bubble: t('Wie viel Zeit willst du pro Tag investieren?', 'How much time do you want to invest per day?'),
+      body: h('div', {}, opts.list, h('p', { class: 'onb-note' }, t('Eine Lektion bringt etwa 15 bis 22 XP. Du kannst das Ziel jederzeit im Profil ändern.', 'A lesson gives about 15 to 22 XP. You can change the goal any time in your profile.'))),
       canGo: Boolean(draft.goal),
     }));
   },
 
   setup() {
-    const status = h('div', { class: 'onb-check' }, h('span', { class: 'muted' }, 'Ich schaue kurz auf deinem PC nach ...'));
+    const status = h('div', { class: 'onb-check' }, h('span', { class: 'muted' }, t('Ich schaue kurz auf deinem PC nach ...', 'Let me quickly check your PC ...')));
     const opts = optionList('setup', SETUP.map(([value, title]) => ({ value, title })));
     opts.bind(frame({
-      bubble: `${draft.langs.length > 1 ? 'Sind' : 'Ist'} ${listNames(draft.langs)} auf deinem PC schon eingerichtet?`,
-      hint: 'Sagst du nein oder teilweise, öffne ich dir in der Werkstatt gleich die passenden Anleitungen.',
+      bubble: t(`${draft.langs.length > 1 ? 'Sind' : 'Ist'} ${listNames(draft.langs)} auf deinem PC schon eingerichtet?`, `${draft.langs.length > 1 ? 'Are' : 'Is'} ${listNames(draft.langs)} already set up on your PC?`),
+      hint: t('Sagst du nein oder teilweise, öffne ich dir in der Werkstatt gleich die passenden Anleitungen.', 'If you say no or partly, I\'ll open the matching guides in the Workshop for you.'),
       body: h('div', {}, opts.list, status),
       canGo: Boolean(draft.setup),
     }));
@@ -341,30 +344,30 @@ const STEPS = {
       if (!s.ready) { setTimeout(() => getStatus(true).then(show), 1500); return; }
       const rows = [];
       rows.push(['Python', s.python ? s.python.version : null]);
-      if (draft.langs.includes('cpp')) rows.push(['C++-Compiler', s.cpp ? s.cpp.version.replace(/^Microsoft \(R\) C\/C\+\+ Optimizing Compiler Version/, 'MSVC') : null]);
+      if (draft.langs.includes('cpp')) rows.push([t('C++-Compiler', 'C++ compiler'), s.cpp ? s.cpp.version.replace(/^Microsoft \(R\) C\/C\+\+ Optimizing Compiler Version/, 'MSVC') : null]);
       const allOk = rows.every(r => r[1]);
       status.replaceChildren(
-        h('p', {}, h('b', {}, 'Bit hat nachgesehen:')),
-        h('ul', {}, rows.map(([name, v]) => h('li', { class: v ? 'is-ok' : 'is-bad' }, h('span', { html: icon(v ? 'check' : 'cross', 18) }), `${name}: ${v || 'nicht gefunden'}`))),
+        h('p', {}, h('b', {}, t('Bit hat nachgesehen:', 'Bit checked:'))),
+        h('ul', {}, rows.map(([name, v]) => h('li', { class: v ? 'is-ok' : 'is-bad' }, h('span', { html: icon(v ? 'check' : 'cross', 18) }), t(`${name}: ${v || 'nicht gefunden'}`, `${name}: ${v || 'not found'}`)))),
         h('p', { class: 'muted' }, allOk
-          ? 'Damit laufen alle Übungen echt auf deinem PC. Wie du auch außerhalb von Laufzeit programmierst, steht in der Werkstatt.'
-          : 'Laufzeit funktioniert trotzdem. Was fehlt und wie du es einrichtest, steht in der Werkstatt.'));
+          ? t('Damit laufen alle Übungen echt auf deinem PC. Wie du auch außerhalb von Laufzeit programmierst, steht in der Werkstatt.', 'All exercises really run on your PC. How to program outside Laufzeit is explained in the Workshop.')
+          : t('Laufzeit funktioniert trotzdem. Was fehlt und wie du es einrichtest, steht in der Werkstatt.', 'Laufzeit still works. What is missing and how to set it up is in the Workshop.')));
     };
     getStatus(true).then(show);
   },
 
   name() {
-    const input = h('input', { class: 'text-input onb-name', maxlength: '40', placeholder: 'Dein Vorname', 'aria-label': 'Dein Name', value: draft.name || '' });
+    const input = h('input', { class: 'text-input onb-name', maxlength: '40', placeholder: t('Dein Vorname', 'Your first name'), 'aria-label': t('Dein Name', 'Your name'), value: draft.name || '' });
     const ref = frame({
-      bubble: 'Wie soll ich dich nennen?',
-      hint: 'Freiwillig. Der Name steht in deinem Profil, dort kannst du auch Profil- und Titelbild hinzufügen.',
+      bubble: t('Wie soll ich dich nennen?', 'What should I call you?'),
+      hint: t('Freiwillig. Der Name steht in deinem Profil, dort kannst du auch Profil- und Titelbild hinzufügen.', 'Optional. The name appears in your profile, where you can also add a profile picture and banner.'),
       body: input,
       canGo: true,
-      nextLabel: draft.name ? 'Weiter' : 'Überspringen',
+      nextLabel: draft.name ? t('Weiter', 'Continue') : t('Überspringen', 'Skip'),
     });
     input.addEventListener('input', () => {
       draft.name = input.value.trim();
-      ref.nextBtn.textContent = draft.name ? 'Weiter' : 'Überspringen';
+      ref.nextBtn.textContent = draft.name ? t('Weiter', 'Continue') : t('Überspringen', 'Skip');
     });
     input.addEventListener('keydown', e => { if (e.key === 'Enter') next(); });
     input.focus();
@@ -372,12 +375,12 @@ const STEPS = {
 
   ready() {
     const s = store.state;
-    const startText = lang => (draft.starts[lang] === 'placement' && draft.placed[lang] ? `Abschnitt ${Math.min(draft.placed[lang] + 1, COURSES[lang].units.length)}` : 'Lektion 1.1');
+    const startText = lang => (draft.starts[lang] === 'placement' && draft.placed[lang] ? t(`Abschnitt ${Math.min(draft.placed[lang] + 1, COURSES[lang].units.length)}`, `Unit ${Math.min(draft.placed[lang] + 1, COURSES[lang].units.length)}`) : t('Lektion 1.1', 'Lesson 1.1'));
     const rows = [
-      [draft.langs.length > 1 ? 'Kurse' : 'Kurs', listNames(draft.langs)],
-      draft.mode === 'full' ? ['Deine Ziele', draft.reasons.map(r => GOAL_LABEL[r]).join(', ')] : null,
+      [draft.langs.length > 1 ? t('Kurse', 'Courses') : t('Kurs', 'Course'), listNames(draft.langs)],
+      draft.mode === 'full' ? [t('Deine Ziele', 'Your goals'), draft.reasons.map(r => GOAL_LABEL[r]).join(', ')] : null,
       draft.mode === 'full' && draft.name ? ['Name', draft.name] : null,
-      ['Tagesziel', `${draft.mode === 'full' ? draft.goal : s.settings.dailyGoal} XP`],
+      [t('Tagesziel', 'Daily goal'), `${draft.mode === 'full' ? draft.goal : s.settings.dailyGoal} XP`],
       ...draft.langs.map(l => [`Start ${nameOf(l)}`, startText(l)]),
     ].filter(Boolean);
 
@@ -386,19 +389,19 @@ const STEPS = {
     const prior = draft.mode === 'full' ? draft.prior : s.profile.prior;
     const allLangs = [...new Set([...s.courses, ...draft.langs])];
     const notes = [];
-    if (reasons.includes('game') && !allLangs.includes('cpp')) notes.push('Für Spieleentwicklung brauchst du später C++. Du kannst den Kurs jederzeit über das Kurs-Menü oben hinzufügen.');
-    if (reasons.includes('school') && !allLangs.includes('python')) notes.push('In der Schule lernst du Python. Den Kurs kannst du jederzeit über das Kurs-Menü hinzufügen.');
-    if (draft.langs.includes('cpp') && (prior.includes('python') || allLangs.includes('python'))) notes.push('Du kennst Python: In C++ zeige ich dir oft den Python-Code direkt daneben.');
-    if (reasons.some(r => r !== 'fun')) notes.push('Abschnitte, die zu deinen Zielen passen, sind im Lernpfad markiert.');
+    if (reasons.includes('game') && !allLangs.includes('cpp')) notes.push(t('Für Spieleentwicklung brauchst du später C++. Du kannst den Kurs jederzeit über das Kurs-Menü oben hinzufügen.', 'For game development you\'ll need C++ later. You can add the course any time from the course menu at the top.'));
+    if (reasons.includes('school') && !allLangs.includes('python')) notes.push(t('In der Schule lernst du Python. Den Kurs kannst du jederzeit über das Kurs-Menü hinzufügen.', 'At school you learn Python. You can add the course any time from the course menu.'));
+    if (draft.langs.includes('cpp') && (prior.includes('python') || allLangs.includes('python'))) notes.push(t('Du kennst Python: In C++ zeige ich dir oft den Python-Code direkt daneben.', 'You know Python: in C++ I\'ll often show you the Python code right next to it.'));
+    if (reasons.some(r => r !== 'fun')) notes.push(t('Abschnitte, die zu deinen Zielen passen, sind im Lernpfad markiert.', 'Units that match your goals are marked on the learning path.'));
 
     frame({
-      bubble: 'Alles bereit. Ich freu mich auf dich!',
+      bubble: t('Alles bereit. Ich freu mich auf dich!', 'All set. I\'m looking forward to it!'),
       mood: 'cheer',
       body: h('div', {},
         h('div', { class: 'onb-summary' }, rows.map(([k, v]) => h('div', {}, h('span', {}, k), h('b', {}, v)))),
         notes.length ? h('ul', { class: 'onb-tips' }, notes.map(n => h('li', {}, n))) : null),
       canGo: true,
-      nextLabel: 'Kurs starten',
+      nextLabel: t('Kurs starten', 'Start course'),
       onNext: commit,
     });
   },

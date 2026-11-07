@@ -1,13 +1,14 @@
 // Personalisierung: Was die Antworten aus der Einfuehrung spaeter bewirken
 
+import { t, locale } from './i18n.js';
 import { store } from './store.js';
 
 export const GOALS = {
-  school: 'Schule',
-  game: 'Spieleentwicklung',
-  work: 'Ausbildung und Beruf',
-  tool: 'Eigene Programme',
-  fun: 'Spaß',
+  school: t('Schule', 'School'),
+  game: t('Spieleentwicklung', 'Game development'),
+  work: t('Ausbildung und Beruf', 'Training and career'),
+  tool: t('Eigene Programme', 'Own programs'),
+  fun: t('Spaß', 'Fun'),
 };
 
 /** Welche Abschnitte zu welchem Ziel besonders beitragen */
@@ -38,10 +39,10 @@ export function unitGoals(unitId, state = store.state) {
 export function missingCourseHint(state = store.state) {
   const goals = userGoals(state);
   if (goals.includes('game') && !state.courses.includes('cpp')) {
-    return { lang: 'cpp', text: 'Für Spieleentwicklung brauchst du C++. Unreal und fast alle großen Engines laufen darauf.' };
+    return { lang: 'cpp', text: t('Für Spieleentwicklung brauchst du C++. Unreal und fast alle großen Engines laufen darauf.', 'For game development you need C++. Unreal and almost all big engines run on it.') };
   }
   if (goals.includes('school') && !state.courses.includes('python')) {
-    return { lang: 'python', text: 'In der Schule lernst du Python. Mit dem Python-Kurs bist du dem Unterricht voraus.' };
+    return { lang: 'python', text: t('In der Schule lernst du Python. Mit dem Python-Kurs bist du dem Unterricht voraus.', 'At school you learn Python. With the Python course you\'re ahead of class.') };
   }
   return null;
 }

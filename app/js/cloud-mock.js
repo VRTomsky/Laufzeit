@@ -32,6 +32,7 @@ export function createMockBackend() {
   let db;
   try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { db = seed(); }
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));
+  const files = new Map();   // Anhaenge nur im Speicher dieser Sitzung
   const authCbs = [];
   const live = [];
   const uid = () => db.session;
@@ -124,9 +125,16 @@ export function createMockBackend() {
     async report(id, reason, messageId) { db.reports.push({ reporter: uid(), reported: id, reason, message_id: messageId }); save(); },
     async messages(otherId) { return delay(db.messages.filter(m => pair(uid(), otherId)({ requester: m.sender, addressee: m.recipient }))); },
     async lastMessages() { return delay(db.messages.filter(m => m.sender === uid() || m.recipient === uid()).slice().reverse()); },
-    async send(otherId, body) {
+    async upload(otherId, file, name) {
+      if (!friends(uid(), otherId)) throw new Error('new row violates row-level security policy');
+      const path = `${uid()}/${otherId}/${Date.now()}-${name}`;
+      files.set(path, URL.createObjectURL(file));
+      return path;
+    },
+    async fileUrl(path) { return files.get(path) || 'data:text/plain,Datei%20nur%20in%20dieser%20Sitzung'; },
+    async send(otherId, body, attachment = null) {
       if (!friends(uid(), otherId) || blocked(uid(), otherId)) throw new Error('new row violates row-level security policy');
-      const m = { id: db.seq++, sender: uid(), recipient: otherId, body, created_at: new Date().toISOString(), read_at: null };
+      const m = { id: db.seq++, sender: uid(), recipient: otherId, body, attachment, created_at: new Date().toISOString(), read_at: null };
       db.messages.push(m);
       save();
       if (otherId === 'u_mia') botReply(uid(), 'u_mia');

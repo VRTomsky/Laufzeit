@@ -168,3 +168,7 @@
 .onb-options.is-grid .onb-option { position: relative; }
 .onb-tips { list-style: none; margin: var(--s4) 0 0; padding: 0; display: grid; gap: var(--s2); }
 .onb-tips li { padding: var(--s3) var(--s4); border-radius: var(--r2); background: var(--sky-soft); font-size: var(--text-sm); }
+
+/* Sprachumschalter auf der Startseite */
+.onb-uilang { position: absolute; top: var(--s4); right: var(--s4); z-index: 2; }
+.onb-welcome { position: relative; }

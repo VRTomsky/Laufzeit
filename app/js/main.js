@@ -1,5 +1,6 @@
 // Einstieg: Router und Start
 
+import { t, locale } from './i18n.js';
 import { store } from './store.js';
 import { applyTheme } from './theme.js';
 import { renderShell, refreshStats, setLangHandler } from './views/shell.js';
@@ -29,14 +30,14 @@ const VIEWS = {
   freunde: renderFriends,
 };
 
-const TITLES = { pfad: 'Lernpfad', training: 'Training', projekte: 'Projekte', labor: 'Labor', werkstatt: 'Werkstatt', profil: 'Profil', freunde: 'Freunde' };
+const TITLES = { pfad: t('Lernpfad', 'Learning path'), training: 'Training', projekte: t('Projekte', 'Projects'), labor: t('Labor', 'Lab'), werkstatt: t('Werkstatt', 'Workshop'), profil: t('Profil', 'Profile'), freunde: t('Freunde', 'Friends') };
 
 function route() {
   const [name = 'pfad', arg, arg2] = location.hash.replace(/^#\/?/, '').split('/');
   document.body.dataset.lang = store.state.activeLang;
 
   if (name === 'konto') {
-    document.title = 'Konto · Laufzeit';
+    document.title = t('Konto · Laufzeit', 'Account · Laufzeit');
     renderAccount(arg);
     return;
   }
@@ -45,7 +46,7 @@ function route() {
       location.replace('#/pfad');
       return;
     }
-    document.title = 'Willkommen · Laufzeit';
+    document.title = t('Willkommen · Laufzeit', 'Welcome · Laufzeit');
     renderOnboarding(arg === 'kurs' ? arg2 : null);
     return;
   }
@@ -55,22 +56,22 @@ function route() {
   }
 
   if (name === 'lektion' && arg) {
-    document.title = 'Lektion · Laufzeit';
+    document.title = t('Lektion · Laufzeit', 'Lesson · Laufzeit');
     startLesson(arg, arg2 === 'gold' ? 'gold' : 'auto');
     return;
   }
   if (name === 'projekt' && arg) {
-    document.title = 'Projekt · Laufzeit';
+    document.title = t('Projekt · Laufzeit', 'Project · Laufzeit');
     startProject(arg);
     return;
   }
   if (name === 'aufgabe' && arg) {
-    document.title = 'Aufgabe · Laufzeit';
+    document.title = t('Aufgabe · Laufzeit', 'Task · Laufzeit');
     startChallenge(arg);
     return;
   }
   if (name === 'test' && arg) {
-    document.title = 'Abschnittstest · Laufzeit';
+    document.title = t('Abschnittstest · Laufzeit', 'Unit test · Laufzeit');
     startUnitTest(arg, arg2 === 'gold' ? 'gold' : 'normal');
     return;
   }
@@ -80,7 +81,7 @@ function route() {
     return;
   }
   if ((name === 'nutzer' || name === 'chat') && arg) {
-    document.title = `${name === 'chat' ? 'Nachrichten' : 'Profil'} · Laufzeit`;
+    document.title = t(`${name === 'chat' ? 'Nachrichten' : 'Profil'} · Laufzeit`, `${name === 'chat' ? 'Messages' : 'Profile'} · Laufzeit`);
     const main = renderShell('freunde');
     (name === 'chat' ? renderChat : renderUser)(main, decodeURIComponent(arg));
     window.scrollTo({ top: 0 });

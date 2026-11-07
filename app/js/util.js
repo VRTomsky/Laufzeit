@@ -71,7 +71,11 @@ export function addDays(date, days) {
   return d;
 }
 
-export const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+import { isEn } from './i18n.js';
+
+const WD_DE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const WD_EN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+export const WEEKDAYS = new Proxy(WD_DE, { get: (arr, k) => (isEn() ? WD_EN : WD_DE)[k] });
 
 export function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);

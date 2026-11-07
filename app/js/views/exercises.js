@@ -2,6 +2,7 @@
 // Jede Funktion bekommt (step, ctx) und liefert { el, check(), focus?() }.
 // ctx: { lang, setReady(bool), onKey(fn), submit() }
 
+import { t, locale } from '../i18n.js';
 import { h, md, inline, escapeHtml, shuffle, normalizeOutput } from '../util.js';
 import { highlight } from '../highlight.js';
 import { icon } from '../icons.js';
@@ -13,13 +14,13 @@ const LANG_FILE = { python: 'main.py', cpp: 'main.cpp' };
 const GAP = /⟦(\d+)⟧/g;
 
 export const KIND_LABEL = {
-  concept: 'Neues Konzept',
-  mc: 'Wähle die richtige Antwort',
-  predict: 'Was wird ausgegeben?',
-  fill: 'Ergänze den Code',
-  order: 'Bring in die richtige Reihenfolge',
-  fix: 'Finde den Fehler',
-  write: 'Schreib selbst',
+  concept: t('Neues Konzept', 'New concept'),
+  mc: t('Wähle die richtige Antwort', 'Pick the right answer'),
+  predict: t('Was wird ausgegeben?', 'What is the output?'),
+  fill: t('Ergänze den Code', 'Fill in the code'),
+  order: t('Bring in die richtige Reihenfolge', 'Put it in the right order'),
+  fix: t('Finde den Fehler', 'Find the bug'),
+  write: t('Schreib selbst', 'Write it yourself'),
 };
 
 /* ---------------------------------------------------------------- Bausteine */
@@ -31,7 +32,7 @@ export function codeBlock(code, lang, label) {
 }
 
 function consoleBlock(text) {
-  return h('div', { class: 'code is-console' }, h('div', { class: 'code-head' }, h('span', {}, 'Konsole')), h('pre', {}, text));
+  return h('div', { class: 'code is-console' }, h('div', { class: 'code-head' }, h('span', {}, t('Konsole', 'Console'))), h('pre', {}, text));
 }
 
 function memoryBlock(cells, caption) {
@@ -49,7 +50,7 @@ function flowBlock(items, loop) {
     if (i > 0) parts.push(h('span', { class: 'flow-arrow', html: icon('arrow') }));
     parts.push(h('span', { class: 'flow-box' }, item));
   });
-  if (loop) parts.push(h('span', { class: 'flow-arrow', html: icon('reset') }), h('span', { class: 'muted', style: { fontSize: 'var(--text-sm)' } }, 'nächster Frame'));
+  if (loop) parts.push(h('span', { class: 'flow-arrow', html: icon('reset') }), h('span', { class: 'muted', style: { fontSize: 'var(--text-sm)' } }, t('nächster Frame', 'next frame')));
   return h('div', { class: `flow${loop ? ' is-loop' : ''}` }, parts);
 }
 
@@ -65,7 +66,7 @@ function concept(step, ctx) {
   if (step.flow) parts.push(flowBlock(step.flow, step.loop));
   if (step.memory) parts.push(memoryBlock(step.memory, step.memoryCaption));
   if (step.compare && step.code) {
-    parts.push(h('div', { class: 'compare' }, codeBlock(step.compare.python, 'python', 'So in Python'), codeBlock(step.code, ctx.lang, 'So in C++')));
+    parts.push(h('div', { class: 'compare' }, codeBlock(step.compare.python, 'python', t('So in Python', 'In Python')), codeBlock(step.code, ctx.lang, 'So in C++')));
   } else if (step.code) {
     parts.push(codeBlock(step.code, ctx.lang));
   }
@@ -114,7 +115,7 @@ function multipleChoice(step, ctx) {
       const right = step.options[step.answer];
       return {
         ok,
-        html: (ok ? '' : `<p>Richtig wäre: ${step.codeOptions ? `<code>${escapeHtml(right)}</code>` : inline(right)}</p>`) + (step.explain ? `<p>${inline(step.explain)}</p>` : ''),
+        html: (ok ? '' : `<p>${t('Richtig wäre', 'Correct would be')}: ${step.codeOptions ? `<code>${escapeHtml(right)}</code>` : inline(right)}</p>`) + (step.explain ? `<p>${inline(step.explain)}</p>` : ''),
       };
     },
   };
@@ -127,8 +128,8 @@ function predictOutput(step, ctx) {
   const multiline = answers[0].includes('\n');
   const input = h(multiline ? 'textarea' : 'input', {
     class: 'answer-input',
-    'aria-label': 'Deine vorhergesagte Ausgabe',
-    placeholder: multiline ? 'Jede Ausgabezeile in eine eigene Zeile' : 'Ausgabe eintippen',
+    'aria-label': t('Deine vorhergesagte Ausgabe', 'Your predicted output'),
+    placeholder: multiline ? t('Jede Ausgabezeile in eine eigene Zeile', 'Each output line on its own line') : t('Ausgabe eintippen', 'Type the output'),
     spellcheck: 'false',
     autocomplete: 'off',
     autocapitalize: 'off',
@@ -137,7 +138,7 @@ function predictOutput(step, ctx) {
   input.addEventListener('input', () => ctx.setReady(input.value.trim().length > 0));
 
   const el = h('div', {}, prompt(step.prompt), codeBlock(step.code, ctx.lang), input,
-    multiline ? h('p', { class: 'foot-hint', style: { marginTop: '8px' } }, 'Strg+Enter zum Prüfen') : null);
+    multiline ? h('p', { class: 'foot-hint', style: { marginTop: '8px' } }, t('Strg+Enter zum Prüfen', 'Ctrl+Enter to check')) : null);
 
   return {
     el,
@@ -154,8 +155,8 @@ function predictOutput(step, ctx) {
       input.readOnly = true;
       input.classList.add(ok ? 'is-right' : 'is-wrong');
       let html = '';
-      if (typo) html += typoNote(typo) + `<p>Genau wäre:</p><pre>${escapeHtml(answers[0])}</pre>`;
-      if (!ok) html += `${near ? `<p>Fast! Hier zählt die Schreibweise${strictCase ? ', denn genau darum geht es in dieser Aufgabe' : ''}.</p>` : ''}<p>Die Ausgabe ist:</p><pre>${escapeHtml(answers[0])}</pre>`;
+      if (typo) html += typoNote(typo) + t(`<p>Genau wäre:</p><pre>${escapeHtml(answers[0])}</pre>`, `<p>Exactly:</p><pre>${escapeHtml(answers[0])}</pre>`);
+      if (!ok) html += `${near ? `<p>${t('Fast! Hier zählt die Schreibweise', 'Almost! The exact spelling counts here')}${strictCase ? t(', denn genau darum geht es in dieser Aufgabe', ', because that is exactly what this task is about') : ''}.</p>` : ''}<p>${t('Die Ausgabe ist:', 'The output is:')}</p><pre>${escapeHtml(answers[0])}</pre>`;
       if (step.explain) html += `<p>${inline(step.explain)}</p>`;
       return { ok, typo: !!typo, title: typo ? TYPO_TITLE : undefined, html };
     },
@@ -178,10 +179,10 @@ function fillGaps(step, ctx) {
     const index = Number(m[1]);
     let gap;
     if (useBank) {
-      gap = h('button', { type: 'button', class: 'gap', 'aria-label': `Lücke ${index + 1}, leer`, onclick: () => clearGap(index) }, ' ');
+      gap = h('button', { type: 'button', class: 'gap', 'aria-label': t(`Lücke ${index + 1}, leer`, `Gap ${index + 1}, empty`), onclick: () => clearGap(index) }, ' ');
     } else {
       const width = Math.max(...gapAnswers[index].map(a => a.length), 3) + 1;
-      gap = h('input', { class: 'gap', size: String(width), 'aria-label': `Lücke ${index + 1}`, spellcheck: 'false', autocomplete: 'off', autocapitalize: 'off' });
+      gap = h('input', { class: 'gap', size: String(width), 'aria-label': t(`Lücke ${index + 1}`, `Gap ${index + 1}`), spellcheck: 'false', autocomplete: 'off', autocapitalize: 'off' });
       gap.addEventListener('input', () => { values[index] = gap.value; updateReady(); });
     }
     gapEls[index] = gap;
@@ -191,7 +192,7 @@ function fillGaps(step, ctx) {
   pre.insertAdjacentHTML('beforeend', highlight(step.code.slice(last), ctx.lang));
 
   const chips = [];
-  const bankEl = useBank ? h('div', { class: 'bank', 'aria-label': 'Bausteine' }) : null;
+  const bankEl = useBank ? h('div', { class: 'bank', 'aria-label': t('Bausteine', 'Pieces') }) : null;
   if (useBank) {
     shuffle(step.bank).forEach(word => {
       const chip = h('button', { type: 'button', class: 'chip', onclick: () => place(chip) }, word);
@@ -212,7 +213,7 @@ function fillGaps(step, ctx) {
     values[index] = chip.dataset.word;
     gapEls[index].textContent = chip.dataset.word;
     gapEls[index].classList.add('is-filled');
-    gapEls[index].setAttribute('aria-label', `Lücke ${index + 1}: ${chip.dataset.word}. Antippen zum Entfernen`);
+    gapEls[index].setAttribute('aria-label', t(`Lücke ${index + 1}: ${chip.dataset.word}. Antippen zum Entfernen`, `Gap ${index + 1}: ${chip.dataset.word}. Tap to remove`));
     gapEls[index].dataset.chip = String(chips.indexOf(chip));
     chip.classList.add('is-used');
     markActive();
@@ -225,7 +226,7 @@ function fillGaps(step, ctx) {
     values[index] = null;
     gapEls[index].textContent = ' ';
     gapEls[index].classList.remove('is-filled');
-    gapEls[index].setAttribute('aria-label', `Lücke ${index + 1}, leer`);
+    gapEls[index].setAttribute('aria-label', t(`Lücke ${index + 1}, leer`, `Gap ${index + 1}, empty`));
     markActive();
     updateReady();
   }
@@ -236,7 +237,7 @@ function fillGaps(step, ctx) {
   markActive();
 
   const code = h('div', { class: 'code gap-code' },
-    h('div', { class: 'code-head' }, h('span', {}, LANG_FILE[ctx.lang]), h('span', {}, useBank ? 'Bausteine antippen' : 'In die Lücken tippen')),
+    h('div', { class: 'code-head' }, h('span', {}, LANG_FILE[ctx.lang]), h('span', {}, useBank ? t('Bausteine antippen', 'Tap the pieces') : t('In die Lücken tippen', 'Tap into the gaps'))),
     pre);
 
   return {
@@ -252,7 +253,7 @@ function fillGaps(step, ctx) {
         if (!useBank) gapEls[i].readOnly = true;
       });
       const solution = step.code.replace(GAP, (_, n) => gapAnswers[Number(n)][0]);
-      let html = ok ? '' : `<p>So ist es richtig:</p><pre>${escapeHtml(solution)}</pre>`;
+      let html = ok ? '' : t(`<p>So ist es richtig:</p><pre>${escapeHtml(solution)}</pre>`, `<p>This is correct:</p><pre>${escapeHtml(solution)}</pre>`);
       if (step.explain) html += `<p>${inline(step.explain)}</p>`;
       return { ok, html };
     },
@@ -267,20 +268,20 @@ function orderLines(step, ctx) {
   // Nicht zufaellig schon richtig sortiert anzeigen
   if (pool.every((x, n) => x.i === n) && pool.length > 1) pool = [...pool.slice(1), pool[0]];
   const answer = [];
-  const area = h('div', { class: 'order-area', 'aria-label': 'Dein Programm' });
-  const poolEl = h('div', { class: 'order-pool', 'aria-label': 'Verfügbare Zeilen' });
+  const area = h('div', { class: 'order-area', 'aria-label': t('Dein Programm', 'Your program') });
+  const poolEl = h('div', { class: 'order-pool', 'aria-label': t('Verfügbare Zeilen', 'Available lines') });
   let locked = false;
 
   function render() {
     area.innerHTML = '';
     poolEl.innerHTML = '';
     answer.forEach((item, n) => area.append(h('button', {
-      type: 'button', class: 'line-btn', 'aria-label': `Zeile ${n + 1}: ${item.text.trim()}. Antippen zum Entfernen`,
+      type: 'button', class: 'line-btn', 'aria-label': t(`Zeile ${n + 1}: ${item.text.trim()}. Antippen zum Entfernen`, `Line ${n + 1}: ${item.text.trim()}. Tap to remove`),
       onclick: () => { if (locked) return; answer.splice(n, 1); pool.push(item); render(); },
       html: highlight(item.text, ctx.lang),
     })));
     pool.forEach((item, n) => poolEl.append(h('button', {
-      type: 'button', class: 'line-btn', 'aria-label': `Zeile hinzufügen: ${item.text.trim()}`,
+      type: 'button', class: 'line-btn', 'aria-label': t(`Zeile hinzufügen: ${item.text.trim()}`, `Add line: ${item.text.trim()}`),
       onclick: () => { if (locked) return; pool.splice(n, 1); answer.push(item); render(); },
       html: highlight(item.text, ctx.lang),
     })));
@@ -289,12 +290,12 @@ function orderLines(step, ctx) {
   render();
 
   return {
-    el: h('div', {}, prompt(step.prompt), area, h('p', { class: 'eyebrow' }, 'Zeilen'), poolEl),
+    el: h('div', {}, prompt(step.prompt), area, h('p', { class: 'eyebrow' }, t('Zeilen', 'Lines')), poolEl),
     async check() {
       locked = true;
       const ok = answer.length === step.lines.length && answer.every((item, n) => item.text === step.lines[n]);
       [...area.children].forEach((btn, n) => btn.classList.add(answer[n].text === step.lines[n] ? 'is-right' : 'is-wrong'));
-      let html = ok ? '' : `<p>Richtige Reihenfolge:</p><pre>${escapeHtml(step.lines.join('\n'))}</pre>`;
+      let html = ok ? '' : t(`<p>Richtige Reihenfolge:</p><pre>${escapeHtml(step.lines.join('\n'))}</pre>`, `<p>Correct order:</p><pre>${escapeHtml(step.lines.join('\n'))}</pre>`);
       if (step.explain) html += `<p>${inline(step.explain)}</p>`;
       return { ok, html };
     },
@@ -304,8 +305,8 @@ function orderLines(step, ctx) {
 /* ---------------------------------------------------------------- fix / write */
 
 export function consolePanel() {
-  const head = h('div', { class: 'console-head' }, h('span', {}, 'Ausgabe'), h('span', {}, ''));
-  const pre = h('pre', {}, h('span', { class: 'is-dim' }, 'Noch nichts ausgeführt.'));
+  const head = h('div', { class: 'console-head' }, h('span', {}, t('Ausgabe', 'Output')), h('span', {}, ''));
+  const pre = h('pre', {}, h('span', { class: 'is-dim' }, t('Noch nichts ausgeführt.', 'Nothing run yet.')));
   const hint = h('div', { class: 'console-hint', hidden: true });
   const el = h('div', { class: 'console', 'aria-live': 'polite' }, head, pre, hint);
   return {
@@ -313,24 +314,24 @@ export function consolePanel() {
     running(tool) {
       el.classList.add('is-running');
       head.lastChild.textContent = tool || '';
-      pre.innerHTML = `<span class="is-dim">${tool && tool.includes('Compiler') ? 'Kompiliere und starte ...' : 'Läuft ...'}</span>\n`;
+      pre.innerHTML = t(`<span class="is-dim">${tool && tool.includes('Compiler') ? 'Kompiliere und starte ...' : 'Läuft ...'}</span>\n`, `<span class="is-dim">${tool && tool.includes('Compiler') ? 'Compiling and starting ...' : 'Running ...'}</span>\n`);
       hint.hidden = true;
     },
     show(res, lang) {
       el.classList.remove('is-running');
       const info = describeRun(res, lang);
-      head.firstChild.textContent = info.label || 'Ausgabe';
+      head.firstChild.textContent = info.label || t('Ausgabe', 'Output');
       head.lastChild.textContent = res.tool || '';
       pre.innerHTML = '';
       if (info.isError) {
         if (info.stdout) pre.append(h('span', {}, info.stdout + '\n'));
-        pre.append(h('span', { class: 'is-err' }, (info.errText || info.text || '').trim() || '(keine Ausgabe)'));
+        pre.append(h('span', { class: 'is-err' }, (info.errText || info.text || '').trim() || t('(keine Ausgabe)', '(no output)')));
       } else {
-        pre.append(info.text ? h('span', {}, info.text) : h('span', { class: 'is-dim' }, '(keine Ausgabe)'));
-        if (res.compileLog && /warning/i.test(res.compileLog)) pre.append(h('span', { class: 'is-dim' }, `\n\nCompiler-Warnung:\n${res.compileLog}`));
+        pre.append(info.text ? h('span', {}, info.text) : h('span', { class: 'is-dim' }, t('(keine Ausgabe)', '(no output)')));
+        if (res.compileLog && /warning/i.test(res.compileLog)) pre.append(h('span', { class: 'is-dim' }, t(`\n\nCompiler-Warnung:\n${res.compileLog}`, `\n\nCompiler warning:\n${res.compileLog}`)));
       }
       hint.hidden = !info.hint;
-      if (info.hint) hint.innerHTML = `<strong>Hinweis:</strong> ${inline(info.hint)}`;
+      if (info.hint) hint.innerHTML = t(`<strong>Hinweis:</strong> ${inline(info.hint)}`, `<strong>Hint:</strong> ${inline(info.hint)}`);
       return info;
     },
   };
@@ -347,7 +348,7 @@ function codeTask(step, ctx) {
     minLines: Math.max(5, (step.code || '').split('\n').length + 1),
     onChange: () => ctx.setReady(editor && editor.value.trim().length > 0),
     onRun: () => run(),
-    label: step.type === 'fix' ? 'Code zum Reparieren' : 'Dein Code',
+    label: step.type === 'fix' ? t('Code zum Reparieren', 'Code to fix') : t('Dein Code', 'Your code'),
   });
 
   const sampleIn = step.stdin || step.tests?.[0]?.stdin || '';
@@ -364,12 +365,12 @@ function codeTask(step, ctx) {
     busy = false;
   }
 
-  const runBtn = h('button', { type: 'button', class: 'btn btn-small', onclick: run }, h('span', { html: icon('run', 16) }), 'Ausführen');
+  const runBtn = h('button', { type: 'button', class: 'btn btn-small', onclick: run }, h('span', { html: icon('run', 16) }), t('Ausführen', 'Run'));
   const resetBtn = h('button', { type: 'button', class: 'btn btn-small', onclick: () => { editor.setValue(step.code || ''); editor.focus(); } },
-    h('span', { html: icon('reset', 16) }), 'Zurücksetzen');
+    h('span', { html: icon('reset', 16) }), t('Zurücksetzen', 'Reset'));
   const bar = h('div', { class: 'ed-bar' }, runBtn, resetBtn,
-    sampleIn ? h('span', { class: 'ed-stdin' }, `${manyTests ? 'Beispiel-Eingabe' : 'Eingabe beim Testen'}: ${sampleIn.replace(/\n/g, ' | ')}${manyTests ? ` (geprüft mit ${step.tests.length} Eingaben)` : ''}`) : null,
-    h('span', { class: 'hint-key' }, 'Strg+Enter: Ausführen'));
+    sampleIn ? h('span', { class: 'ed-stdin' }, `${manyTests ? t('Beispiel-Eingabe', 'Sample input') : t('Eingabe beim Testen', 'Input when checking')}: ${sampleIn.replace(/\n/g, ' | ')}${manyTests ? t(` (geprüft mit ${step.tests.length} Eingaben)`, ` (checked with ${step.tests.length} inputs)`) : ''}`) : null,
+    h('span', { class: 'hint-key' }, t('Strg+Enter: Ausführen', 'Ctrl+Enter: run')));
 
   ctx.setReady((step.code || '').trim().length > 0);
 
@@ -388,7 +389,7 @@ function codeTask(step, ctx) {
         editor.markLine(info.line);
       } else {
         out.el.classList.remove('is-running');
-        out.el.querySelector('pre').innerHTML = '<span class="is-dim">Nicht ausgeführt, die Regeln der Aufgabe sind noch nicht erfüllt.</span>';
+        out.el.querySelector('pre').innerHTML = t('<span class="is-dim">Nicht ausgeführt, die Regeln der Aufgabe sind noch nicht erfüllt.</span>', '<span class="is-dim">Not run, the rules of this task are not met yet.</span>');
       }
       return res;
     },
@@ -409,6 +410,6 @@ const RENDERERS = {
 
 export function renderExercise(step, ctx) {
   const render = RENDERERS[step.type];
-  if (!render) throw new Error(`Unbekannter Übungstyp: ${step.type}`);
+  if (!render) throw new Error(t(`Unbekannter Übungstyp: ${step.type}`, `Unknown exercise type: ${step.type}`));
   return render(step, ctx);
 }

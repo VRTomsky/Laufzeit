@@ -1,5 +1,6 @@
 // XP, Stufen, Streaks und Badges
 
+import { t, locale } from './i18n.js';
 import { store } from './store.js';
 import { dayKey, addDays } from './util.js';
 import { COURSES, allLessons } from './content/index.js';
@@ -62,31 +63,31 @@ function distinctLessons(state) {
 }
 
 export const BADGES = [
-  { id: 'first', mark: 'Hi', name: 'Hallo, Welt', desc: 'Erste Lektion abgeschlossen.', test: s => s.stats.lessons >= 1 },
-  { id: 'perfect', mark: '0err', name: 'Sauberer Build', desc: 'Eine Lektion ohne einen einzigen Fehler.', test: s => s.stats.perfect >= 1 },
-  { id: 'build', mark: '.exe', name: 'Erster Build', desc: 'Erstes eigenes C++-Programm kompiliert und gestartet.', test: s => s.stats.runs.cpp >= 1 },
-  { id: 'both', mark: '2x', name: 'Zweisprachig', desc: 'In Python und C++ je eine Lektion geschafft.', test: s => ownLessons(s, 'python') > 0 && ownLessons(s, 'cpp') > 0 },
-  { id: 'unit', mark: '§1', name: 'Kapitel zu', desc: 'Einen ganzen Abschnitt abgeschlossen.', test: s => Object.values(COURSES).some(c => c.units.some(u => unitDone(s, c.id, u))) },
-  { id: 'streak3', mark: '3d', name: 'Drei am Stück', desc: 'Drei Tage hintereinander gelernt.', test: s => s.streak.best >= 3 },
-  { id: 'streak7', mark: '7d', name: 'Eine Woche', desc: 'Sieben Tage hintereinander gelernt.', test: s => s.streak.best >= 7 },
-  { id: 'streak30', mark: '30d', name: 'Dranbleiber', desc: 'Dreißig Tage hintereinander gelernt.', test: s => s.streak.best >= 30 },
-  { id: 'xp100', mark: '100', name: 'Dreistellig', desc: '100 XP gesammelt.', test: s => s.xp >= 100 },
-  { id: 'xp1000', mark: '1k', name: 'Tausender', desc: '1000 XP gesammelt.', test: s => s.xp >= 1000 },
-  { id: 'ten', mark: '10L', name: 'Zehn Lektionen', desc: 'Zehn verschiedene Lektionen abgeschlossen.', test: s => distinctLessons(s) >= 10 },
-  { id: 'training', mark: 'rep', name: 'Wiederholer', desc: 'Erstes Training absolviert.', test: s => s.stats.trainings >= 1 },
-  { id: 'test', mark: 'A+', name: 'Prüfung bestanden', desc: 'Den ersten Abschnittstest geschafft.', test: s => s.stats.tests >= 1 },
-  { id: 'quests', mark: '3/3', name: 'Tagwerk', desc: 'An einem Tag alle drei Tagesaufgaben erledigt.', test: s => s.stats.questDays >= 1 },
-  { id: 'pyDone', mark: '.py', name: 'Python-Profi', desc: 'Den kompletten Python-Kurs abgeschlossen.', test: s => courseProgress('python', s).done === courseProgress('python', s).total },
-  { id: 'cppDone', mark: '.cpp', name: 'C++-Profi', desc: 'Den kompletten C++-Kurs abgeschlossen.', test: s => courseProgress('cpp', s).done === courseProgress('cpp', s).total },
-  { id: 'project1', mark: 'v1', name: 'Erstes Projekt', desc: 'Ein komplettes Projekt fertig gebaut.', test: s => Object.values(s.projects).some(p => p.done) },
-  { id: 'project4', mark: 'v4', name: 'Baumeister', desc: 'Vier Projekte fertig gebaut.', test: s => Object.values(s.projects).filter(p => p.done).length >= 4 },
-  { id: 'chal1', mark: 'OK', name: 'Ohne Vorlage', desc: 'Die erste freie Aufgabe gelöst.', test: s => Object.keys(s.challenges).length >= 1 },
-  { id: 'chal10', mark: '10/10', name: 'Problemlöser', desc: 'Zehn freie Aufgaben gelöst.', test: s => Object.keys(s.challenges).length >= 10 },
-  { id: 'chal25', mark: '25+', name: 'Wettkampfreif', desc: '25 freie Aufgaben gelöst.', test: s => Object.keys(s.challenges).length >= 25 },
-  { id: 'gold1', mark: 'Au', name: 'Erstes Gold', desc: 'Eine Lektion auf Gold abgeschlossen.', test: s => Object.values(s.langs).some(l => Object.values(l.lessons).some(r => r.gold)) },
-  { id: 'goldUnit', mark: 'Au+', name: 'Goldener Abschnitt', desc: 'Einen ganzen Abschnitt samt Gold-Prüfung vergoldet.', test: s => Object.values(s.langs).some(l => Object.keys(l.gold || {}).length > 0) },
-  { id: 'gold5', mark: '5Au', name: 'Goldrausch', desc: 'Fünf Abschnitte vergoldet.', test: s => Object.values(s.langs).reduce((n, l) => n + Object.keys(l.gold || {}).length, 0) >= 5 },
-  { id: 'night', mark: '22h', name: 'Nachtschicht', desc: 'Nach 22 Uhr noch eine Lektion gemacht.', test: s => s.stats.nightOwl },
+  { id: 'first', mark: 'Hi', name: t('Hallo, Welt', 'Hello, World'), desc: t('Erste Lektion abgeschlossen.', 'Finished your first lesson.'), test: s => s.stats.lessons >= 1 },
+  { id: 'perfect', mark: '0err', name: t('Sauberer Build', 'Clean build'), desc: t('Eine Lektion ohne einen einzigen Fehler.', 'A lesson without a single mistake.'), test: s => s.stats.perfect >= 1 },
+  { id: 'build', mark: '.exe', name: t('Erster Build', 'First build'), desc: t('Erstes eigenes C++-Programm kompiliert und gestartet.', 'Compiled and ran your first own C++ program.'), test: s => s.stats.runs.cpp >= 1 },
+  { id: 'both', mark: '2x', name: t('Zweisprachig', 'Bilingual'), desc: t('In Python und C++ je eine Lektion geschafft.', 'Finished a lesson in both Python and C++.'), test: s => ownLessons(s, 'python') > 0 && ownLessons(s, 'cpp') > 0 },
+  { id: 'unit', mark: '§1', name: t('Kapitel zu', 'Chapter closed'), desc: t('Einen ganzen Abschnitt abgeschlossen.', 'Finished a whole unit.'), test: s => Object.values(COURSES).some(c => c.units.some(u => unitDone(s, c.id, u))) },
+  { id: 'streak3', mark: '3d', name: t('Drei am Stück', 'Three in a row'), desc: t('Drei Tage hintereinander gelernt.', 'Learned three days in a row.'), test: s => s.streak.best >= 3 },
+  { id: 'streak7', mark: '7d', name: t('Eine Woche', 'One week'), desc: t('Sieben Tage hintereinander gelernt.', 'Learned seven days in a row.'), test: s => s.streak.best >= 7 },
+  { id: 'streak30', mark: '30d', name: t('Dranbleiber', 'Sticking with it'), desc: t('Dreißig Tage hintereinander gelernt.', 'Learned thirty days in a row.'), test: s => s.streak.best >= 30 },
+  { id: 'xp100', mark: '100', name: t('Dreistellig', 'Three digits'), desc: '100 XP gesammelt.', test: s => s.xp >= 100 },
+  { id: 'xp1000', mark: '1k', name: t('Tausender', 'Thousand'), desc: '1000 XP gesammelt.', test: s => s.xp >= 1000 },
+  { id: 'ten', mark: '10L', name: t('Zehn Lektionen', 'Ten lessons'), desc: t('Zehn verschiedene Lektionen abgeschlossen.', 'Finished ten different lessons.'), test: s => distinctLessons(s) >= 10 },
+  { id: 'training', mark: 'rep', name: t('Wiederholer', 'Repeater'), desc: t('Erstes Training absolviert.', 'Finished your first training.'), test: s => s.stats.trainings >= 1 },
+  { id: 'test', mark: 'A+', name: t('Prüfung bestanden', 'Test passed'), desc: t('Den ersten Abschnittstest geschafft.', 'Passed your first unit test.'), test: s => s.stats.tests >= 1 },
+  { id: 'quests', mark: '3/3', name: t('Tagwerk', 'Day\'s work'), desc: t('An einem Tag alle drei Tagesaufgaben erledigt.', 'Finished all three daily quests in one day.'), test: s => s.stats.questDays >= 1 },
+  { id: 'pyDone', mark: '.py', name: t('Python-Profi', 'Python pro'), desc: t('Den kompletten Python-Kurs abgeschlossen.', 'Finished the complete Python course.'), test: s => courseProgress('python', s).done === courseProgress('python', s).total },
+  { id: 'cppDone', mark: '.cpp', name: t('C++-Profi', 'C++ pro'), desc: t('Den kompletten C++-Kurs abgeschlossen.', 'Finished the complete C++ course.'), test: s => courseProgress('cpp', s).done === courseProgress('cpp', s).total },
+  { id: 'project1', mark: 'v1', name: t('Erstes Projekt', 'First project'), desc: t('Ein komplettes Projekt fertig gebaut.', 'Built a complete project.'), test: s => Object.values(s.projects).some(p => p.done) },
+  { id: 'project4', mark: 'v4', name: t('Baumeister', 'Master builder'), desc: t('Vier Projekte fertig gebaut.', 'Built four projects.'), test: s => Object.values(s.projects).filter(p => p.done).length >= 4 },
+  { id: 'chal1', mark: 'OK', name: t('Ohne Vorlage', 'No template'), desc: t('Die erste freie Aufgabe gelöst.', 'Solved your first free task.'), test: s => Object.keys(s.challenges).length >= 1 },
+  { id: 'chal10', mark: '10/10', name: t('Problemlöser', 'Problem solver'), desc: t('Zehn freie Aufgaben gelöst.', 'Solved ten free tasks.'), test: s => Object.keys(s.challenges).length >= 10 },
+  { id: 'chal25', mark: '25+', name: t('Wettkampfreif', 'Competition ready'), desc: t('25 freie Aufgaben gelöst.', 'Solved 25 free tasks.'), test: s => Object.keys(s.challenges).length >= 25 },
+  { id: 'gold1', mark: 'Au', name: t('Erstes Gold', 'First gold'), desc: t('Eine Lektion auf Gold abgeschlossen.', 'Finished a lesson on gold.'), test: s => Object.values(s.langs).some(l => Object.values(l.lessons).some(r => r.gold)) },
+  { id: 'goldUnit', mark: 'Au+', name: t('Goldener Abschnitt', 'Golden unit'), desc: t('Einen ganzen Abschnitt samt Gold-Prüfung vergoldet.', 'Turned a whole unit gold, including the gold test.'), test: s => Object.values(s.langs).some(l => Object.keys(l.gold || {}).length > 0) },
+  { id: 'gold5', mark: '5Au', name: t('Goldrausch', 'Gold rush'), desc: t('Fünf Abschnitte vergoldet.', 'Five units turned gold.'), test: s => Object.values(s.langs).reduce((n, l) => n + Object.keys(l.gold || {}).length, 0) >= 5 },
+  { id: 'night', mark: '22h', name: t('Nachtschicht', 'Night shift'), desc: t('Nach 22 Uhr noch eine Lektion gemacht.', 'Did a lesson after 10 pm.'), test: s => s.stats.nightOwl },
 ];
 
 /** Prueft alle Badges, traegt neue ein und gibt sie zurueck. Muss innerhalb von store.update laufen. */
@@ -198,9 +199,9 @@ export function dailyQuests(state = store.state, day = todayKey()) {
   const xp = state.days[day] || 0;
   const d = state.daily[day] || { sessions: 0, perfect: 0 };
   return [
-    { id: 'xp', icon: 'bolt', text: `Sammle ${goal} XP`, value: Math.min(xp, goal), max: goal },
-    { id: 'sessions', icon: 'target', text: 'Schließe 2 Lektionen oder Trainings ab', value: Math.min(d.sessions, 2), max: 2 },
-    { id: 'perfect', icon: 'quest', text: 'Schaffe eine Runde ohne Fehler', value: Math.min(d.perfect, 1), max: 1 },
+    { id: 'xp', icon: 'bolt', text: t(`Sammle ${goal} XP`, `Earn ${goal} XP`), value: Math.min(xp, goal), max: goal },
+    { id: 'sessions', icon: 'target', text: t('Schließe 2 Lektionen oder Trainings ab', 'Finish 2 lessons or trainings'), value: Math.min(d.sessions, 2), max: 2 },
+    { id: 'perfect', icon: 'quest', text: t('Schaffe eine Runde ohne Fehler', 'Finish a round without mistakes'), value: Math.min(d.perfect, 1), max: 1 },
   ];
 }
 

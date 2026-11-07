@@ -2,8 +2,12 @@
 
 import { python } from './python.js';
 import { cpp } from './cpp.js';
+import { python as pythonEn } from './en/python.js';
+import { isEn } from '../i18n.js';
 
-export const COURSES = { python, cpp };
+// Inhalte je nach Sprache der Oberflaeche. Gleiche IDs, darum gilt der Fortschritt fuer beide.
+// C++ auf Englisch folgt, bis dahin bleibt es Deutsch.
+export const COURSES = isEn() ? { python: pythonEn, cpp } : { python, cpp };
 export const LANG_IDS = ['python', 'cpp'];
 
 export function allLessons(lang) {

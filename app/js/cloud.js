@@ -2,6 +2,7 @@
 // Technik: Supabase. Die Datenbank prueft selbst, wer was darf (supabase/schema.sql).
 // Ohne eingetragene Zugangsdaten (config.js) bleibt Laufzeit wie bisher rein lokal.
 
+import { t, locale } from './i18n.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, WEB_URL } from './config.js';
 import { IS_WEB } from './env.js';
 import { store } from './store.js';
@@ -41,18 +42,18 @@ export const safeImg = src => (typeof src === 'string' && IMG_RE.test(src) ? src
 
 export function germanError(err) {
   const m = String(err?.message || err || '');
-  if (/Invalid login credentials/i.test(m)) return 'E-Mail oder Passwort stimmt nicht.';
-  if (/already registered|already been registered/i.test(m)) return 'Für diese E-Mail gibt es schon ein Konto. Log dich ein.';
-  if (/Email not confirmed/i.test(m)) return 'Bestätige zuerst deine E-Mail. Der Link steht in deinem Postfach (auch im Spam-Ordner nachsehen).';
-  if (/Password should be|password.*(short|characters)/i.test(m)) return 'Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.';
-  if (/weak password|pwned/i.test(m)) return 'Dieses Passwort ist zu leicht zu erraten. Nimm ein anderes.';
-  if (/Database error saving new user|duplicate key.*username|profiles_username_key/i.test(m)) return 'Dieser Benutzername ist schon vergeben.';
-  if (/rate limit|too many/i.test(m)) return 'Zu viele Versuche gerade. Warte ein paar Minuten.';
-  if (/invalid.*email|Unable to validate email/i.test(m)) return 'Diese E-Mail-Adresse sieht nicht richtig aus.';
-  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Keine Verbindung zum Server. Bist du online?';
-  if (/row-level security|violates/i.test(m)) return 'Das ist nicht erlaubt (z. B. nur unter Freunden möglich).';
-  if (/same_password|different from the old/i.test(m)) return 'Das neue Passwort muss anders sein als das alte.';
-  return m || 'Etwas ist schiefgegangen.';
+  if (/Invalid login credentials/i.test(m)) return t('E-Mail oder Passwort stimmt nicht.', 'Email or password is wrong.');
+  if (/already registered|already been registered/i.test(m)) return t('Für diese E-Mail gibt es schon ein Konto. Log dich ein.', 'There\'s already an account for this email. Log in.');
+  if (/Email not confirmed/i.test(m)) return t('Bestätige zuerst deine E-Mail. Der Link steht in deinem Postfach (auch im Spam-Ordner nachsehen).', 'Confirm your email first. The link is in your inbox (also check the spam folder).');
+  if (/Password should be|password.*(short|characters)/i.test(m)) return t('Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.', 'The password is too short. Use at least 8 characters.');
+  if (/weak password|pwned/i.test(m)) return t('Dieses Passwort ist zu leicht zu erraten. Nimm ein anderes.', 'This password is too easy to guess. Pick another one.');
+  if (/Database error saving new user|duplicate key.*username|profiles_username_key/i.test(m)) return t('Dieser Benutzername ist schon vergeben.', 'This username is already taken.');
+  if (/rate limit|too many/i.test(m)) return t('Zu viele Versuche gerade. Warte ein paar Minuten.', 'Too many attempts right now. Wait a few minutes.');
+  if (/invalid.*email|Unable to validate email/i.test(m)) return t('Diese E-Mail-Adresse sieht nicht richtig aus.', 'This email address doesn\'t look right.');
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return t('Keine Verbindung zum Server. Bist du online?', 'No connection to the server. Are you online?');
+  if (/row-level security|violates/i.test(m)) return t('Das ist nicht erlaubt (z. B. nur unter Freunden möglich).', 'That\'s not allowed (e.g. only possible between friends).');
+  if (/same_password|different from the old/i.test(m)) return t('Das neue Passwort muss anders sein als das alte.', 'The new password must be different from the old one.');
+  return m || t('Etwas ist schiefgegangen.', 'Something went wrong.');
 }
 
 const must = ({ data, error }) => { if (error) throw error; return data; };
@@ -65,6 +66,16 @@ async function supabaseBackend() {
     auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'laufzeit.auth' },
   });
   const uid = () => user?.id;
+  let msgCols = 'id,sender,recipient,body,created_at,read_at,attachment';
+  async function withCols(query) {
+    let res = await query(msgCols);
+    if (res.error && /attachment/.test(res.error.message || '') && msgCols.includes('attachment')) {
+      msgCols = 'id,sender,recipient,body,created_at,read_at';
+      attachmentsReady = false;
+      res = await query(msgCols);
+    }
+    return must(res);
+  }
   const redirect = () => (IS_WEB ? WEB_URL : `${location.origin}/`);
   const self = {
     async session() {
@@ -114,17 +125,29 @@ async function supabaseBackend() {
     async report(id, reason, messageId = null) { must(await sb.from('reports').insert({ reporter: uid(), reported: id, reason, message_id: messageId })); },
 
     async messages(otherId, limit = 150) {
-      const rows = must(await sb.from('messages').select('id,sender,recipient,body,created_at,read_at')
+      const rows = await withCols(cols => sb.from('messages').select(cols)
         .or(`and(sender.eq.${uid()},recipient.eq.${otherId}),and(sender.eq.${otherId},recipient.eq.${uid()})`)
         .order('created_at', { ascending: false }).limit(limit));
       return rows.reverse();
     },
     async lastMessages() {
-      return must(await sb.from('messages').select('id,sender,recipient,body,created_at,read_at')
+      return withCols(cols => sb.from('messages').select(cols)
         .order('created_at', { ascending: false }).limit(300));
     },
-    async send(otherId, body) {
-      return must(await sb.from('messages').insert({ sender: uid(), recipient: otherId, body }).select('id,sender,recipient,body,created_at,read_at').single());
+    async send(otherId, body, attachment = null) {
+      const row = { sender: uid(), recipient: otherId, body };
+      if (attachment) row.attachment = attachment;
+      return withCols(cols => sb.from('messages').insert(row).select(cols).single());
+    },
+    async upload(otherId, file, name) {
+      const rand = Math.random().toString(36).slice(2, 10);
+      const path = `${uid()}/${otherId}/${Date.now()}-${rand}-${name}`;
+      must(await sb.storage.from('chat').upload(path, file, { contentType: file.type, upsert: false }));
+      return path;
+    },
+    async fileUrl(path, download = null) {
+      const data = must(await sb.storage.from('chat').createSignedUrl(path, 3600, download ? { download } : undefined));
+      return data.signedUrl;
     },
     async markRead(otherId) {
       must(await sb.from('messages').update({ read_at: new Date().toISOString() }).eq('recipient', uid()).eq('sender', otherId).is('read_at', null));
@@ -287,10 +310,10 @@ async function doSync() {
       use = 'local';                        // erster Login: Stand von diesem Geraet mitnehmen
     } else {
       const keepCloud = await confirmDialog({
-        title: 'Welchen Stand behalten?',
-        text: `In deinem Konto sind ${cloud.xp} XP gespeichert, auf diesem Gerät ${local.xp} XP. Welchen Stand willst du weiter benutzen? Der andere wird überschrieben.`,
-        ok: `Konto (${cloud.xp} XP)`,
-        cancel: `Dieses Gerät (${local.xp} XP)`,
+        title: t('Welchen Stand behalten?', 'Which progress do you want to keep?'),
+        text: t(`In deinem Konto sind ${cloud.xp} XP gespeichert, auf diesem Gerät ${local.xp} XP. Welchen Stand willst du weiter benutzen? Der andere wird überschrieben.`, `Your account has ${cloud.xp} XP saved, this device ${local.xp} XP. Which progress do you want to keep using? The other one will be overwritten.`),
+        ok: t(`Konto (${cloud.xp} XP)`, `Account (${cloud.xp} XP)`),
+        cancel: t(`Dieses Gerät (${local.xp} XP)`, `This device (${local.xp} XP)`),
       });
       use = keepCloud ? 'cloud' : 'local';
     }
@@ -360,8 +383,8 @@ function startLive() {
 }
 
 const nudgeText = (n, who) => (n.kind === 'streak'
-  ? `${who} teilt die Serie: ${n.streak} ${n.streak === 1 ? 'Tag' : 'Tage'} in Folge.`
-  : `${who} feuert dich an. Zeit für eine Lektion!`);
+  ? t(`${who} teilt die Serie: ${n.streak} ${n.streak === 1 ? 'Tag' : 'Tage'} in Folge.`, `${who} shares their streak: ${n.streak} ${n.streak === 1 ? 'day' : 'days'} in a row.`)
+  : t(`${who} feuert dich an. Zeit für eine Lektion!`, `${who} is cheering you on. Time for a lesson!`));
 export { nudgeText };
 
 async function showNudgeToasts() {
@@ -373,8 +396,8 @@ async function showNudgeToasts() {
     const byId = Object.fromEntries(people.map(p => [p.id, p]));
     fresh.slice(0, 3).forEach(n => {
       shownNudges.add(n.id);
-      const who = byId[n.sender]?.name || `@${byId[n.sender]?.username || 'Jemand'}`;
-      toast(n.kind === 'streak' ? 'Serie geteilt' : 'Du wirst angefeuert', nudgeText(n, who));
+      const who = byId[n.sender]?.name || t(`@${byId[n.sender]?.username || 'Jemand'}`, `@${byId[n.sender]?.username || 'Someone'}`);
+      toast(n.kind === 'streak' ? t('Serie geteilt', 'Streak shared') : t('Du wirst angefeuert', 'You\'re being cheered on'), nudgeText(n, who));
     });
   } catch {
     // egal
@@ -433,7 +456,7 @@ export function initCloud() {
 
 async function need() {
   await initCloud();
-  if (!api) throw new Error('Der Konto-Dienst ist gerade nicht erreichbar.');
+  if (!api) throw new Error(t('Der Konto-Dienst ist gerade nicht erreichbar.', 'The account service isn\'t reachable right now.'));
   return api;
 }
 
@@ -441,9 +464,9 @@ async function need() {
 
 export async function register({ email, password, username, name }) {
   const a = await need();
-  if (!USERNAME_RE.test(username)) throw new Error('Benutzername: 3 bis 20 Zeichen, nur Kleinbuchstaben, Zahlen und _.');
-  if (password.length < 8) throw new Error('Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.');
-  if (!(await a.usernameAvailable(username))) throw new Error('Dieser Benutzername ist schon vergeben.');
+  if (!USERNAME_RE.test(username)) throw new Error(t('Benutzername: 3 bis 20 Zeichen, nur Kleinbuchstaben, Zahlen und _.', 'Username: 3 to 20 characters, only lowercase letters, numbers and _.'));
+  if (password.length < 8) throw new Error(t('Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.', 'The password is too short. Use at least 8 characters.'));
+  if (!(await a.usernameAvailable(username))) throw new Error(t('Dieser Benutzername ist schon vergeben.', 'This username is already taken.'));
   manualAuth = true;
   try {
     const res = await a.signUp(email.trim(), password, username, name.trim());
@@ -489,7 +512,7 @@ export async function logout() {
 
 export async function sendReset(email) { await (await need()).resetPassword(email.trim()); }
 export async function setNewPassword(pw) {
-  if (pw.length < 8) throw new Error('Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.');
+  if (pw.length < 8) throw new Error(t('Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.', 'The password is too short. Use at least 8 characters.'));
   await (await need()).updatePassword(pw);
 }
 
@@ -508,7 +531,7 @@ export async function deleteAccount() {
 export async function saveProfile(fields) {
   const a = await need();
   if (fields.username && fields.username !== me?.username) {
-    if (!(await a.usernameAvailable(fields.username))) throw new Error('Dieser Benutzername ist schon vergeben.');
+    if (!(await a.usernameAvailable(fields.username))) throw new Error(t('Dieser Benutzername ist schon vergeben.', 'This username is already taken.'));
   }
   const send = {
     username: fields.username,
@@ -575,10 +598,58 @@ export async function reportUser(id, reason, messageId = null) { await (await ne
 /* ================================================================ Nachrichten */
 
 export const loadThread = async otherId => (await need()).messages(otherId);
-export async function sendMessage(otherId, body) {
+export async function sendMessage(otherId, body, attachment = null) {
   const text = body.trim().slice(0, 1000);
-  if (!text) throw new Error('Leere Nachricht.');
-  return (await need()).send(otherId, text);
+  if (!text && !attachment) throw new Error(t('Leere Nachricht.', 'Empty message.'));
+  return (await need()).send(otherId, text, attachment);
+}
+
+/* ================================================================ Anhaenge */
+
+export const ATTACH_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'text/plain', 'application/zip'];
+export const ATTACH_MAX = 5 * 1024 * 1024;
+let attachmentsReady = true;
+export const attachmentsAvailable = () => attachmentsReady;
+
+/** Grosse Fotos vor dem Hochladen verkleinern (max. 1600 px, JPEG) */
+async function shrinkImage(file) {
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size < 1.5 * 1024 * 1024) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+    return blob ? new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+  } catch {
+    return file;
+  }
+}
+
+const safeName = n => (n || 'datei').normalize('NFKD').replace(/[^\w.\-]+/g, '_').replace(/^_+|_+$/g, '').slice(-80) || 'datei';
+
+/** Datei hochladen und als Nachricht schicken */
+export async function sendAttachment(otherId, file, body = '') {
+  if (!ATTACH_TYPES.includes(file.type)) throw new Error(t('Dieser Dateityp geht nicht. Erlaubt: Bilder, PDF, Text und ZIP.', 'This file type is not allowed. Allowed: images, PDF, text and ZIP.'));
+  const ready = await shrinkImage(file);
+  if (ready.size > ATTACH_MAX) throw new Error(t('Die Datei ist größer als 5 MB.', 'The file is larger than 5 MB.'));
+  const a = await need();
+  const name = safeName(ready.name);
+  const path = await a.upload(otherId, ready, name);
+  return sendMessage(otherId, body, { path, name: (ready.name || name).slice(0, 120), type: ready.type, size: ready.size });
+}
+
+const urlCache = new Map();
+/** Kurzlebiger Link zu einer Datei (nur Absender und Empfaenger duerfen ihn holen) */
+export async function attachmentUrl(path, downloadName = null) {
+  const key = `${path}|${downloadName || ''}`;
+  const hit = urlCache.get(key);
+  if (hit && hit.until > Date.now()) return hit.url;
+  const url = await (await need()).fileUrl(path, downloadName);
+  urlCache.set(key, { url, until: Date.now() + 50 * 60 * 1000 });
+  return url;
 }
 export async function markThreadRead(otherId) { await (await need()).markRead(otherId); refreshCounts(); }
 

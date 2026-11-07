@@ -201,7 +201,9 @@ def run_python(code: str, stdin: str, quiet_input: bool) -> dict:
     with tempfile.TemporaryDirectory(prefix="laufzeit-", ignore_cleanup_errors=True) as tmp:
         source = QUIET_INPUT_PRELUDE + code if quiet_input else code
         Path(tmp, "main.py").write_text(source, encoding="utf-8")
-        res = execute([sys.executable, "-I", "-X", "utf8", "main.py"], tmp, stdin, RUN_TIMEOUT)
+        env = {k: v for k, v in os.environ.items() if k not in ("FORCE_COLOR", "PY_COLORS")}
+        env.update(PYTHON_COLORS="0", NO_COLOR="1")   # keine Farbcodes in Fehlermeldungen
+        res = execute([sys.executable, "-I", "-X", "utf8", "main.py"], tmp, stdin, RUN_TIMEOUT, env)
         res["stderr"] = clean_paths(res["stderr"], tmp)
         if quiet_input:
             res["stderr"] = re.sub(

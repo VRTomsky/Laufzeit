@@ -1,7 +1,9 @@
 // "Bit": die Figur von Laufzeit. Ein kleiner Computer mit Bildschirm-Gesicht.
 // Stimmungen: happy, cheer (Arme hoch), think, sad, wave
 
-export function bit({ size = 120, mood = 'happy', body = 'var(--accent)', edge = 'var(--accent-edge)', label = 'Bit, die Laufzeit-Figur' } = {}) {
+import { t, locale } from './i18n.js';
+
+export function bit({ size = 120, mood = 'happy', body = 'var(--accent)', edge = 'var(--accent-edge)', label = t('Bit, die Laufzeit-Figur', 'Bit, the Laufzeit mascot') } = {}) {
   const eyes = {
     happy: '<path d="M44 52q5-6 10 0M66 52q5-6 10 0" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>',
     cheer: '<path d="M44 53q5-7 10 0M66 53q5-7 10 0" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>',

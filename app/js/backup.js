@@ -1,5 +1,6 @@
 // Automatische Sicherung auf den Desktop (ueber server.py, Ordner "Laufzeit-Sicherungen")
 
+import { t, locale } from './i18n.js';
 import { store } from './store.js';
 import { IS_WEB } from './env.js';
 
@@ -39,14 +40,14 @@ export function onBackupChange(fn) {
 
 /** Sichert sofort. Liefert { ok, dir, name } oder { ok: false, error } */
 export async function backupNow() {
-  if (busy) return { ok: false, error: 'Sicherung läuft schon.' };
+  if (busy) return { ok: false, error: t('Sicherung läuft schon.', 'Backup already running.') };
   busy = true;
   let res;
   try {
     const r = await fetch('/api/backup', { method: 'POST', headers, body: JSON.stringify({ data: store.state }) });
-    res = r.ok ? await r.json() : { ok: false, error: r.status === 404 ? 'Der Server kennt die Sicherung noch nicht. Schließ das schwarze Fenster und starte start.bat neu.' : `Server-Fehler ${r.status}` };
+    res = r.ok ? await r.json() : { ok: false, error: r.status === 404 ? t('Der Server kennt die Sicherung noch nicht. Schließ das schwarze Fenster und starte start.bat neu.', 'The server doesn\'t know backups yet. Close the black window and restart start.bat.') : t(`Server-Fehler ${r.status}`, `Server error ${r.status}`) };
   } catch {
-    res = { ok: false, error: 'Der lokale Server antwortet nicht. Läuft start.bat?' };
+    res = { ok: false, error: t('Der lokale Server antwortet nicht. Läuft start.bat?', 'The local server isn\'t responding. Is start.bat running?') };
   }
   busy = false;
   lastSent = Date.now();
@@ -62,19 +63,19 @@ export async function backupNow() {
 }
 
 export async function listBackups() {
-  if (IS_WEB) return { ok: false, files: [], error: 'Online gibt es keine Desktop-Sicherung.' };
+  if (IS_WEB) return { ok: false, files: [], error: t('Online gibt es keine Desktop-Sicherung.', 'There is no desktop backup online.') };
   try {
     const r = await fetch('/api/backup', { headers, cache: 'no-store' });
-    if (!r.ok) return { ok: false, files: [], error: r.status === 404 ? 'Server neu starten, dann geht es.' : `Server-Fehler ${r.status}` };
+    if (!r.ok) return { ok: false, files: [], error: r.status === 404 ? t('Server neu starten, dann geht es.', 'Restart the server, then it works.') : t(`Server-Fehler ${r.status}`, `Server error ${r.status}`) };
     return await r.json();
   } catch {
-    return { ok: false, files: [], error: 'Server nicht erreichbar.' };
+    return { ok: false, files: [], error: t('Server nicht erreichbar.', 'Server not reachable.') };
   }
 }
 
 export async function loadBackup(name) {
   const r = await fetch(`/api/backup?name=${encodeURIComponent(name)}`, { headers, cache: 'no-store' });
-  if (!r.ok) throw new Error('Sicherung nicht gefunden.');
+  if (!r.ok) throw new Error(t('Sicherung nicht gefunden.', 'Backup not found.'));
   const res = await r.json();
   return res.data;
 }

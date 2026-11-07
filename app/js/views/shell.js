@@ -1,20 +1,22 @@
 // App-Rahmen: linke Leiste (Marke, Sprachwechsel, Navigation) und rechte Spalte (Kennzahlen, Tagesaufgaben, Stufe)
 
+import { t, locale } from '../i18n.js';
 import { h, dayKey, addDays, WEEKDAYS } from '../util.js';
 import { icon, solidIcon, langLogo } from '../icons.js';
 import { store } from '../store.js';
 import { COURSES, LANG_IDS } from '../content/index.js';
+import { uiLangButton } from './uilang.js';
 import { CLOUD_ENABLED, socialCounts, onCloudChange } from '../cloud.js';
 import { levelInfo, currentStreak, learnedToday, todayXp, nextBadge, dailyQuests } from '../gamification.js';
 
 const NAV = [
-  ['pfad', 'Lernen', 'path'],
+  ['pfad', t('Lernen', 'Learn'), 'path'],
   ['training', 'Training', 'training'],
-  ['projekte', 'Projekte', 'work'],
-  ['labor', 'Labor', 'lab'],
-  ['werkstatt', 'Werkstatt', 'setup'],
-  ['freunde', 'Freunde', 'friends'],
-  ['profil', 'Profil', 'profile'],
+  ['projekte', t('Projekte', 'Projects'), 'work'],
+  ['labor', t('Labor', 'Lab'), 'lab'],
+  ['werkstatt', t('Werkstatt', 'Workshop'), 'setup'],
+  ['freunde', t('Freunde', 'Friends'), 'friends'],
+  ['profil', t('Profil', 'Profile'), 'profile'],
 ];
 
 let onLangChange = () => {};
@@ -46,7 +48,7 @@ function toggleCourseMenu(anchor) {
     role: 'menu',
     style: { top: `${r.bottom + 10}px`, left: `${Math.max(12, Math.min(window.innerWidth - 292, r.left - 8))}px` },
   },
-  h('p', { class: 'eyebrow' }, 'Meine Kurse'),
+  h('p', { class: 'eyebrow' }, t('Meine Kurse', 'My courses')),
   mine.map(id => h('button', {
     type: 'button',
     role: 'menuitemradio',
@@ -63,7 +65,7 @@ function toggleCourseMenu(anchor) {
   others.length ? h('div', { class: 'cm-sep' }) : null,
   others.map(id => h('a', { class: 'cm-item is-add', role: 'menuitem', href: `#/start/kurs/${id}` },
     h('span', { class: 'cm-plus', 'aria-hidden': 'true' }, '+'),
-    h('span', { class: 'ls-text' }, h('span', { class: 'ls-name' }, `${COURSES[id].name} hinzufügen`), h('span', { class: 'ls-sub' }, COURSES[id].sub)))));
+    h('span', { class: 'ls-text' }, h('span', { class: 'ls-name' }, t(`${COURSES[id].name} hinzufügen`, `Add ${COURSES[id].name}`)), h('span', { class: 'ls-sub' }, COURSES[id].sub)))));
   document.body.append(menuEl);
   anchor.setAttribute('aria-expanded', 'true');
   menuEl.querySelector('.cm-item')?.focus();
@@ -81,11 +83,12 @@ export function statRow() {
       class: 'stat-chip course-chip',
       'aria-haspopup': 'menu',
       'aria-expanded': 'false',
-      'aria-label': `Kurs: ${COURSES[lang].name}. Kurs wechseln oder hinzufügen`,
+      'aria-label': t(`Kurs: ${COURSES[lang].name}. Kurs wechseln oder hinzufügen`, `Course: ${COURSES[lang].name}. Switch or add a course`),
       onclick: e => { e.stopPropagation(); toggleCourseMenu(e.currentTarget); },
     }, h('span', { class: 'ls-logo', html: langLogo(lang, 32) }), h('span', { class: 'chip-caret', html: icon('chevron', 16) })),
-    h('span', { class: `stat-chip is-flame${hot ? '' : ' is-cold'}`, title: `${streak} Tage in Folge` }, h('span', { html: solidIcon(hot ? 'flame' : 'flameCold', 26) }), streak),
-    h('span', { class: 'stat-chip is-xp', title: `${s.xp} XP gesamt` }, h('span', { html: solidIcon('bolt', 26) }), s.xp));
+    h('span', { class: `stat-chip is-flame${hot ? '' : ' is-cold'}`, title: t(`${streak} Tage in Folge`, `${streak} days in a row`) }, h('span', { html: solidIcon(hot ? 'flame' : 'flameCold', 26) }), streak),
+    h('span', { class: 'stat-chip is-xp', title: `${s.xp} XP gesamt` }, h('span', { html: solidIcon('bolt', 26) }), s.xp),
+    uiLangButton('stat-chip'));
 }
 
 function streakCard() {
@@ -94,8 +97,8 @@ function streakCard() {
   const today = learnedToday(s);
   const goal = s.settings.dailyGoal;
   const sub = streak === 0
-    ? (s.streak.best > 0 ? `Serie gerissen. Dein Bestwert: ${s.streak.best} Tage.` : 'Schließ heute eine Lektion ab und starte deine Serie.')
-    : today ? `Heute erledigt. Bestwert: ${s.streak.best}.` : 'Heute noch nichts gelernt. Um Mitternacht reißt die Serie.';
+    ? (s.streak.best > 0 ? t(`Serie gerissen. Dein Bestwert: ${s.streak.best} Tage.`, `Streak broken. Your best: ${s.streak.best} days.`) : t('Schließ heute eine Lektion ab und starte deine Serie.', 'Finish a lesson today and start your streak.'))
+    : today ? t(`Heute erledigt. Bestwert: ${s.streak.best}.`, `Done for today. Best: ${s.streak.best}.`) : t('Heute noch nichts gelernt. Um Mitternacht reißt die Serie.', 'Nothing learned today yet. The streak breaks at midnight.');
   const week = [];
   for (let i = 6; i >= 0; i--) {
     const d = addDays(new Date(), -i);
@@ -104,7 +107,7 @@ function streakCard() {
       h('i'), WEEKDAYS[d.getDay()]));
   }
   return h('section', { class: 'card' },
-    h('div', { class: 'card-head' }, h('h2', {}, 'Serie'), h('span', { class: 'card-big is-flame' }, `${streak} ${streak === 1 ? 'Tag' : 'Tage'}`)),
+    h('div', { class: 'card-head' }, h('h2', {}, t('Serie', 'Streak')), h('span', { class: 'card-big is-flame' }, t(`${streak} ${streak === 1 ? 'Tag' : 'Tage'}`, `${streak} ${streak === 1 ? 'day' : 'days'}`))),
     h('p', { class: 'card-sub' }, sub),
     h('div', { class: 'week' }, week));
 }
@@ -112,7 +115,7 @@ function streakCard() {
 export function questCard() {
   const quests = dailyQuests();
   return h('section', { class: 'card' },
-    h('div', { class: 'card-head' }, h('h2', {}, 'Tagesaufgaben'), h('span', { class: 'card-meta' }, `${quests.filter(q => q.value >= q.max).length}/3`)),
+    h('div', { class: 'card-head' }, h('h2', {}, t('Tagesaufgaben', 'Daily quests')), h('span', { class: 'card-meta' }, `${quests.filter(q => q.value >= q.max).length}/3`)),
     h('ul', { class: 'quests' }, quests.map(q => {
       const pct = Math.round((q.value / q.max) * 100);
       return h('li', { class: pct >= 100 ? 'is-done' : '' },
@@ -128,23 +131,23 @@ function levelCard() {
   const lvl = levelInfo(s.xp);
   const pct = Math.round((lvl.into / lvl.need) * 100);
   return h('section', { class: 'card' },
-    h('div', { class: 'card-head' }, h('h2', {}, `Stufe ${lvl.level}`), h('span', { class: 'card-meta' }, `${lvl.into} / ${lvl.need} XP`)),
+    h('div', { class: 'card-head' }, h('h2', {}, t(`Stufe ${lvl.level}`, `Level ${lvl.level}`)), h('span', { class: 'card-meta' }, `${lvl.into} / ${lvl.need} XP`)),
     h('div', { class: 'qbar is-accent' }, h('span', { style: { width: `${pct}%` } })));
 }
 
 function badgeCard() {
   const badge = nextBadge();
   return h('section', { class: 'card' },
-    h('div', { class: 'card-head' }, h('h2', {}, 'Nächstes Abzeichen')),
+    h('div', { class: 'card-head' }, h('h2', {}, t('Nächstes Abzeichen', 'Next badge'))),
     badge
       ? h('div', { class: 'next-badge' },
         h('span', { class: 'seal is-locked', 'aria-hidden': 'true' }, badge.mark),
         h('div', {}, h('strong', {}, badge.name), h('p', {}, badge.desc)))
-      : h('p', { class: 'card-sub' }, 'Alle Abzeichen gesammelt.'));
+      : h('p', { class: 'card-sub' }, t('Alle Abzeichen gesammelt.', 'All badges collected.')));
 }
 
 function ledger() {
-  return h('aside', { class: 'ledger', id: 'ledger', 'aria-label': 'Dein Stand' },
+  return h('aside', { class: 'ledger', id: 'ledger', 'aria-label': t('Dein Stand', 'Your progress') },
     statRow(), streakCard(), questCard(), levelCard(), badgeCard());
 }
 
@@ -155,9 +158,9 @@ export function renderShell(view) {
   const main = h('main', { class: 'main', id: 'main' });
   const rail = h('header', { class: 'rail' },
     h('div', { class: 'brand-row' },
-      h('a', { class: 'brand', href: '#/pfad', 'aria-label': 'Laufzeit, zum Lernpfad' }, 'laufzeit', h('span', { class: 'brand-cursor' })),
+      h('a', { class: 'brand', href: '#/pfad', 'aria-label': t('Laufzeit, zum Lernpfad', 'Laufzeit, to the learning path') }, 'laufzeit', h('span', { class: 'brand-cursor' })),
       h('div', { class: 'mobile-only', id: 'mobile-stats' }, statRow())),
-    h('nav', { class: 'nav', 'aria-label': 'Bereiche' },
+    h('nav', { class: 'nav', 'aria-label': t('Bereiche', 'Sections') },
       NAV.map(([id, label, ic]) => h('a', { href: `#/${id}`, 'aria-current': id === view ? 'page' : null },
         id === 'profil' && store.state.profile.avatar
           ? h('img', { class: 'nav-icon nav-avatar', src: store.state.profile.avatar, alt: '', width: 30, height: 30 })
@@ -177,7 +180,7 @@ function paintBadge() {
   const n = c.messages + c.requests + c.nudges;
   el.hidden = n === 0;
   el.textContent = n > 9 ? '9+' : String(n);
-  el.title = [c.messages && `${c.messages} ungelesen`, c.requests && `${c.requests} Anfragen`, c.nudges && `${c.nudges} Anfeuern`].filter(Boolean).join(', ');
+  el.title = [c.messages && `${c.messages} ungelesen`, c.requests && t(`${c.requests} Anfragen`, `${c.requests} requests`), c.nudges && t(`${c.nudges} Anfeuern`, `${c.nudges} cheers`)].filter(Boolean).join(', ');
 }
 onCloudChange(paintBadge);
 

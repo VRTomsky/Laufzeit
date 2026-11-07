@@ -3,6 +3,7 @@
 // Streng bleiben: Zahlen, Satzzeichen, Zeilen, True/False/None und Aufgaben,
 // in denen Gross-/Kleinschreibung das Thema ist (upper, lower, toupper ...).
 
+import { t, locale } from './i18n.js';
 import { normalizeOutput, escapeHtml } from './util.js';
 
 const IS_LETTER = /\p{L}/u;
@@ -149,16 +150,16 @@ export function typoNote(result, { code = false } = {}) {
   const parts = [];
   if (result.words?.length) {
     const list = result.words.map(([mine, right]) =>
-      `<code>${escapeHtml(mine)}</code> → richtig wäre <code>${escapeHtml(right)}</code>`).join(', ');
-    parts.push(`<p>Zählt trotzdem, aber achte drauf: ${list}.</p>`);
+      t(`<code>${escapeHtml(mine)}</code> → richtig wäre <code>${escapeHtml(right)}</code>`, `<code>${escapeHtml(mine)}</code> → correct would be <code>${escapeHtml(right)}</code>`)).join(', ');
+    parts.push(t(`<p>Zählt trotzdem, aber achte drauf: ${list}.</p>`, `<p>Still counts, but watch out: ${list}.</p>`));
   }
   if (result.spacing) {
-    parts.push(`<p>${result.words?.length ? 'Außerdem weichen' : 'Zählt trotzdem, aber es weichen'} die Leerzeichen leicht ab.</p>`);
+    parts.push(t(`<p>${result.words?.length ? 'Außerdem weichen' : 'Zählt trotzdem, aber es weichen'} die Leerzeichen leicht ab.</p>`, `<p>${result.words?.length ? 'Also, the' : 'Still counts, but the'} spaces differ slightly.</p>`));
   }
   parts.push(code
-    ? '<p>In Textausgaben ist so ein Tippfehler harmlos. Im Code selbst zählt aber jedes Zeichen: <code>Print</code> statt <code>print</code> wäre ein echter Fehler.</p>'
-    : '<p>Computer vergleichen Zeichen für Zeichen. Im echten Programm wäre das eine andere Ausgabe.</p>');
+    ? t('<p>In Textausgaben ist so ein Tippfehler harmlos. Im Code selbst zählt aber jedes Zeichen: <code>Print</code> statt <code>print</code> wäre ein echter Fehler.</p>', '<p>In text output a typo like this is harmless. In the code itself every character counts: <code>Print</code> instead of <code>print</code> would be a real error.</p>')
+    : t('<p>Computer vergleichen Zeichen für Zeichen. Im echten Programm wäre das eine andere Ausgabe.</p>', '<p>Computers compare character by character. In a real program this would be a different output.</p>'));
   return parts.join('');
 }
 
-export const TYPO_TITLE = 'Richtig, mit kleinem Tippfehler.';
+export const TYPO_TITLE = t('Richtig, mit kleinem Tippfehler.', 'Correct, with a small typo.');

@@ -43,6 +43,12 @@ Damit Registrieren, Freunde und Nachrichten funktionieren, braucht Laufzeit eine
 
 **Niemals** den Key **service_role** oder **secret** weitergeben oder irgendwo eintragen. Der hat alle Rechte. Der „anon“- bzw. „publishable“-Key ist dagegen für Webseiten gedacht und darf öffentlich sein. Was er darf, regeln die Zugriffsregeln aus `schema.sql`.
 
+## 5. Bilder und Dateien im Chat (Erweiterung)
+
+1. **SQL Editor**, **New query**.
+2. Inhalt von `supabase/02-anhaenge.sql` einfügen, **Run**.
+3. Fertig. Der private Speicher „chat“ wird dabei automatisch angelegt (max. 5 MB pro Datei, nur Bilder, PDF, Text, ZIP). Dateien sehen nur Absender und Empfänger.
+
 ## Danach: Admin-Aufgaben
 
 - **Meldungen ansehen:** Supabase, **Table Editor**, Tabelle `reports`. Dort steht, wer wen warum gemeldet hat.

@@ -1,5 +1,6 @@
 // Profil: Kopf mit Titel- und Profilbild, Stand, Verlauf, Abzeichen, Einstellungen, Sicherung
 
+import { t, locale, uiLang, setUiLang } from '../i18n.js';
 import { h, dayKey, addDays, toast, confirmDialog, showModal } from '../util.js';
 import { icon, solidIcon, langLogo } from '../icons.js';
 import { bit } from '../mascot.js';
@@ -13,21 +14,21 @@ import { backupNow, backupInfo, listBackups, loadBackup, onBackupChange } from '
 import { IS_WEB } from '../env.js';
 import { CLOUD_ENABLED, currentUser, myProfile, saveProfile, logout, deleteAccount, blockedIds, unblockUser, germanError, initCloud, profilesById } from '../cloud.js';
 
-const AGE_LABEL = { u13: 'Unter 13', '13-15': '13 bis 15', '16-18': '16 bis 18', '19+': '19 oder älter' };
-const PRIOR_LABEL = { none: 'Noch nie programmiert', blocks: 'Blöcke, z. B. Scratch', python: 'Python', cfamily: 'C++, C# oder Java', other: 'Andere Sprache' };
-const LEVEL_LABEL = ['', 'neu', 'ein paar Befehle', 'einfache Programme', 'Schleifen und Funktionen', 'fortgeschritten'];
+const AGE_LABEL = { u13: t('Unter 13', 'Under 13'), '13-15': '13 bis 15', '16-18': '16 bis 18', '19+': t('19 oder älter', '19 or older') };
+const PRIOR_LABEL = { none: t('Noch nie programmiert', 'Never programmed'), blocks: t('Blöcke, z. B. Scratch', 'Blocks, e.g. Scratch'), python: 'Python', cfamily: t('C++, C# oder Java', 'C++, C# or Java'), other: t('Andere Sprache', 'Another language') };
+const LEVEL_LABEL = ['', 'neu', t('ein paar Befehle', 'a few commands'), t('einfache Programme', 'simple programs'), t('Schleifen und Funktionen', 'loops and functions'), 'fortgeschritten'];
 
 /** Profilbild: eigenes Bild oder Bit als Platzhalter */
 export function avatarEl(size = 120, cls = '') {
   const p = store.state.profile;
   return p.avatar
-    ? h('img', { class: `avatar ${cls}`, src: p.avatar, alt: p.name ? `Profilbild von ${p.name}` : 'Profilbild', width: size, height: size })
-    : h('span', { class: `avatar is-bit ${cls}`, style: { width: `${size}px`, height: `${size}px` }, html: bit({ size: Math.round(size * 0.72), mood: 'happy', label: 'Kein Profilbild' }) });
+    ? h('img', { class: `avatar ${cls}`, src: p.avatar, alt: p.name ? t(`Profilbild von ${p.name}`, `Profile picture of ${p.name}`) : t('Profilbild', 'Profile picture'), width: size, height: size })
+    : h('span', { class: `avatar is-bit ${cls}`, style: { width: `${size}px`, height: `${size}px` }, html: bit({ size: Math.round(size * 0.72), mood: 'happy', label: t('Kein Profilbild', 'No profile picture') }) });
 }
 
 function joinedText() {
   const d = new Date(store.state.profile.joined || Date.now());
-  return `Dabei seit ${d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`;
+  return t(`Dabei seit ${d.toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}`, `Joined ${d.toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}`);
 }
 
 /* ---------------------------------------------------------------- Kopf */
@@ -37,23 +38,23 @@ function profileHeader() {
   const p = s.profile;
   const lvl = levelInfo(s.xp);
   const banner = h('div', { class: 'prof-banner', style: p.banner ? { backgroundImage: `url("${p.banner}")` } : null },
-    p.banner ? null : h('span', { class: 'prof-banner-empty' }, 'Kein Titelbild'));
+    p.banner ? null : h('span', { class: 'prof-banner-empty' }, t('Kein Titelbild', 'No banner')));
   return h('section', { class: 'prof-card' },
     banner,
     h('div', { class: 'prof-body' },
       h('div', { class: 'prof-avatar' }, avatarEl(128)),
       h('div', { class: 'prof-id' },
-        h('h1', {}, p.name || 'Dein Name'),
-        h('p', { class: 'prof-user' }, p.username ? `@${p.username}` : 'Noch kein Benutzername'),
+        h('h1', {}, p.name || t('Dein Name', 'Your name')),
+        h('p', { class: 'prof-user' }, p.username ? `@${p.username}` : t('Noch kein Benutzername', 'No username yet')),
         h('p', { class: 'prof-joined' }, joinedText()),
         p.bio ? h('p', { class: 'prof-bio' }, p.bio) : null,
         h('div', { class: 'prof-courses' }, s.courses.map(l => h('span', { class: 'prof-course', title: COURSES[l].name, html: langLogo(l, 30) })))),
-      h('button', { type: 'button', class: 'btn btn-sky prof-edit', onclick: openEditor }, 'Profil bearbeiten')),
+      h('button', { type: 'button', class: 'btn btn-sky prof-edit', onclick: openEditor }, t('Profil bearbeiten', 'Edit profile'))),
     h('div', { class: 'prof-stats' },
-      h('div', {}, h('span', { html: solidIcon(currentStreak(s) > 0 ? 'flame' : 'flameCold', 30) }), h('b', {}, currentStreak(s)), h('small', {}, 'Tage in Folge')),
+      h('div', {}, h('span', { html: solidIcon(currentStreak(s) > 0 ? 'flame' : 'flameCold', 30) }), h('b', {}, currentStreak(s)), h('small', {}, t('Tage in Folge', 'day streak'))),
       h('div', {}, h('span', { html: solidIcon('bolt', 30) }), h('b', {}, s.xp), h('small', {}, 'XP gesamt')),
-      h('div', {}, h('span', { html: solidIcon('trophy', 30) }), h('b', {}, lvl.level), h('small', {}, `Stufe, noch ${lvl.need - lvl.into} XP`)),
-      h('div', {}, h('span', { html: solidIcon('quest', 30) }), h('b', {}, BADGES.filter(b => s.badges[b.id]).length), h('small', {}, 'Abzeichen'))));
+      h('div', {}, h('span', { html: solidIcon('trophy', 30) }), h('b', {}, lvl.level), h('small', {}, t(`Stufe, noch ${lvl.need - lvl.into} XP`, `Level, ${lvl.need - lvl.into} XP to go`))),
+      h('div', {}, h('span', { html: solidIcon('quest', 30) }), h('b', {}, BADGES.filter(b => s.badges[b.id]).length), h('small', {}, t('Abzeichen', 'Badges')))));
 }
 
 /* ---------------------------------------------------------------- Bearbeiten */
@@ -68,7 +69,7 @@ function openEditor() {
     bannerPrev.style.backgroundImage = draft.banner ? `url("${draft.banner}")` : '';
     bannerPrev.classList.toggle('is-empty', !draft.banner);
     avatarPrev.innerHTML = '';
-    avatarPrev.append(draft.avatar ? h('img', { class: 'avatar', src: draft.avatar, alt: 'Vorschau Profilbild', width: 96, height: 96 }) : h('span', { class: 'avatar is-bit', style: { width: '96px', height: '96px' }, html: bit({ size: 70 }) }));
+    avatarPrev.append(draft.avatar ? h('img', { class: 'avatar', src: draft.avatar, alt: t('Vorschau Profilbild', 'Profile picture preview'), width: 96, height: 96 }) : h('span', { class: 'avatar is-bit', style: { width: '96px', height: '96px' }, html: bit({ size: 70 }) }));
   }
 
   function picker(label, w, hgt, key) {
@@ -100,9 +101,9 @@ function openEditor() {
 
   let release = () => {};
   const dlg = h('dialog', { class: 'confirm prof-dialog' },
-    h('h2', {}, 'Profil bearbeiten'),
+    h('h2', {}, t('Profil bearbeiten', 'Edit profile')),
     h('div', { class: 'field' }, h('span', {}, 'Titelbild'), bannerPrev, picker('Titelbild wählen', 1200, 320, 'banner')),
-    h('div', { class: 'field' }, h('span', {}, 'Profilbild'), h('div', { class: 'edit-avatar-row' }, avatarPrev, picker('Profilbild wählen', 256, 256, 'avatar'))),
+    h('div', { class: 'field' }, h('span', {}, t('Profilbild', 'Profile picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, picker('Profilbild wählen', 256, 256, 'avatar'))),
     h('label', { class: 'field' }, h('span', {}, 'Name'), nameIn),
     h('label', { class: 'field' }, h('span', {}, 'Benutzername'), userIn, userHint),
     h('label', { class: 'field' }, h('span', {}, 'Über mich'), bioIn),
@@ -162,7 +163,7 @@ function openEditor() {
 
 /** Ziele als Mehrfachauswahl, wirken auf Lernpfad und Werkstatt */
 function goalToggles() {
-  const group = h('div', { class: 'seg', role: 'group', 'aria-label': 'Deine Ziele' });
+  const group = h('div', { class: 'seg', role: 'group', 'aria-label': t('Deine Ziele', 'Your goals') });
   Object.entries(GOALS).forEach(([id, label]) => group.append(h('button', {
     type: 'button',
     'aria-pressed': String(store.state.profile.reasons.includes(id)),
@@ -180,17 +181,17 @@ function goalToggles() {
 function aboutSection() {
   const p = store.state.profile;
   const rows = [
-    ['Alter', AGE_LABEL[p.age] || 'keine Angabe'],
-    ['Vorkenntnisse', p.prior.length ? p.prior.map(x => PRIOR_LABEL[x]).join(', ') : 'keine Angabe'],
-    ...store.state.courses.map(l => [`Start-Level ${COURSES[l].name}`, p.level[l] ? `Stufe ${p.level[l]} von 5, ${LEVEL_LABEL[p.level[l]]}` : 'keine Angabe']),
+    [t('Alter', 'Age'), AGE_LABEL[p.age] || t('keine Angabe', 'not set')],
+    [t('Vorkenntnisse', 'Experience'), p.prior.length ? p.prior.map(x => PRIOR_LABEL[x]).join(', ') : t('keine Angabe', 'not set')],
+    ...store.state.courses.map(l => [t(`Start-Level ${COURSES[l].name}`, `Start level ${COURSES[l].name}`), p.level[l] ? t(`Stufe ${p.level[l]} von 5, ${LEVEL_LABEL[p.level[l]]}`, `Level ${p.level[l]} of 5, ${LEVEL_LABEL[p.level[l]]}`) : t('keine Angabe', 'not set')]),
   ];
   const missing = LANG_IDS.filter(l => !store.state.courses.includes(l));
   return h('section', { class: 'section' },
-    h('h2', {}, 'Über dich'),
-    h('div', { class: 'field' }, h('span', {}, 'Deine Ziele'), goalToggles(),
-      h('small', { class: 'muted' }, 'Mehrere möglich. Passende Abschnitte werden im Lernpfad markiert, passende Anleitungen in der Werkstatt aufgeklappt.')),
+    h('h2', {}, t('Über dich', 'About you')),
+    h('div', { class: 'field' }, h('span', {}, t('Deine Ziele', 'Your goals')), goalToggles(),
+      h('small', { class: 'muted' }, t('Mehrere möglich. Passende Abschnitte werden im Lernpfad markiert, passende Anleitungen in der Werkstatt aufgeklappt.', 'Pick several. Matching units are marked on the learning path, matching guides opened in the Workshop.'))),
     h('div', { class: 'onb-summary', style: { marginBottom: 'var(--s4)' } }, rows.map(([k, v]) => h('div', {}, h('span', {}, k), h('b', {}, v)))),
-    missing.length ? h('div', { class: 'row-actions' }, missing.map(l => h('a', { class: 'btn btn-sky btn-small', href: `#/start/kurs/${l}` }, `${COURSES[l].name} hinzufügen`))) : null);
+    missing.length ? h('div', { class: 'row-actions' }, missing.map(l => h('a', { class: 'btn btn-sky btn-small', href: `#/start/kurs/${l}` }, t(`${COURSES[l].name} hinzufügen`, `Add ${COURSES[l].name}`)))) : null);
 }
 
 function segmented(options, value, onPick, label) {
@@ -215,11 +216,11 @@ function history() {
     days.push({ d, xp: s.days[dayKey(d)] || 0, today: i === 0 });
   }
   const max = Math.max(goal, ...days.map(x => x.xp));
-  return h('div', { class: 'bars', role: 'img', 'aria-label': `XP der letzten 14 Tage, Tagesziel ${goal} XP` },
-    days.map(x => h('div', { class: `bar${x.today ? ' is-today' : ''}`, title: `${x.d.toLocaleDateString('de-DE')}: ${x.xp} XP` },
+  return h('div', { class: 'bars', role: 'img', 'aria-label': t(`XP der letzten 14 Tage, Tagesziel ${goal} XP`, `XP of the last 14 days, daily goal ${goal} XP`) },
+    days.map(x => h('div', { class: `bar${x.today ? ' is-today' : ''}`, title: t(`${x.d.toLocaleDateString(locale())}: ${x.xp} XP`, `${x.d.toLocaleDateString(locale())}: ${x.xp} XP`) },
       h('i', { style: { height: `${(x.xp / max) * 100}%` } }),
       h('small', {}, x.d.getDate()))),
-    h('div', { class: 'bars-goal', style: { bottom: `calc(22px + ${(goal / max) * (140 - 22)}px)` }, title: `Tagesziel ${goal} XP` }));
+    h('div', { class: 'bars-goal', style: { bottom: `calc(22px + ${(goal / max) * (140 - 22)}px)` }, title: t(`Tagesziel ${goal} XP`, `Daily goal ${goal} XP`) }));
 }
 
 /* ---------------------------------------------------------------- Sicherung */
@@ -227,7 +228,7 @@ function history() {
 function fmtTime(ms) {
   const d = new Date(ms);
   const today = new Date().toDateString() === d.toDateString();
-  return today ? `heute um ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr` : d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+  return today ? t(`heute um ${d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })} Uhr`, `today at ${d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}`) : d.toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function backupSection() {
@@ -238,32 +239,32 @@ function backupSection() {
     status.className = `backup-status${info.error ? ' is-bad' : info.last ? ' is-ok' : ''}`;
     status.innerHTML = '';
     if (info.error) status.append(h('span', { html: icon('cross', 18) }), info.error);
-    else if (info.last) status.append(h('span', { html: icon('check', 18) }), `Zuletzt gesichert ${fmtTime(info.last)}`, info.dir ? h('small', {}, info.dir) : null);
-    else status.append('Noch keine Sicherung auf dem Desktop.');
+    else if (info.last) status.append(h('span', { html: icon('check', 18) }), t(`Zuletzt gesichert ${fmtTime(info.last)}`, `Last backup ${fmtTime(info.last)}`), info.dir ? h('small', {}, info.dir) : null);
+    else status.append(t('Noch keine Sicherung auf dem Desktop.', 'No backup on the desktop yet.'));
   }
 
   async function paintList() {
     const res = await listBackups();
     list.innerHTML = '';
     if (!res.ok) { list.append(h('li', { class: 'muted' }, res.error)); return; }
-    if (!res.files.length) { list.append(h('li', { class: 'muted' }, 'Noch keine Dateien im Ordner.')); return; }
+    if (!res.files.length) { list.append(h('li', { class: 'muted' }, t('Noch keine Dateien im Ordner.', 'No files in the folder yet.'))); return; }
     res.files.forEach(f => list.append(h('li', {},
-      h('span', {}, h('b', {}, new Date(f.name.slice(19, 29)).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })), h('small', {}, `${f.name.includes('-vorher-') ? 'älterer Stand vom selben Tag · ' : ''}${Math.max(1, Math.round(f.size / 1024))} KB`)),
-      h('button', { type: 'button', class: 'btn btn-small', onclick: () => restore(f.name) }, 'Laden'))));
+      h('span', {}, h('b', {}, new Date(f.name.slice(19, 29)).toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })), h('small', {}, t(`${f.name.includes('-vorher-') ? 'älterer Stand vom selben Tag · ' : ''}${Math.max(1, Math.round(f.size / 1024))} KB`, `${f.name.includes('-vorher-') ? 'older version from the same day · ' : ''}${Math.max(1, Math.round(f.size / 1024))} KB`))),
+      h('button', { type: 'button', class: 'btn btn-small', onclick: () => restore(f.name) }, t('Laden', 'Load')))));
   }
 
   async function restore(name) {
-    const ok = await confirmDialog({ title: 'Diese Sicherung laden?', text: 'Dein aktueller Stand wird durch die Sicherung ersetzt. Der aktuelle Stand wird vorher noch als heutige Sicherung gespeichert, falls die geladene älter ist.', ok: 'Laden' });
+    const ok = await confirmDialog({ title: t('Diese Sicherung laden?', 'Load this backup?'), text: t('Dein aktueller Stand wird durch die Sicherung ersetzt. Der aktuelle Stand wird vorher noch als heutige Sicherung gespeichert, falls die geladene älter ist.', 'Your current progress will be replaced by the backup. Your current progress is saved as today\'s backup first if the loaded one is older.'), ok: t('Laden', 'Load') });
     if (!ok) return;
     try {
       const data = await loadBackup(name);
       if (!name.includes(dayKey())) await backupNow();
       store.importJSON(JSON.stringify(data));
       applyTheme();
-      toast('Sicherung geladen', name);
+      toast(t('Sicherung geladen', 'Backup loaded'), name);
       location.hash = '#/pfad';
     } catch (err) {
-      toast('Laden fehlgeschlagen', err.message);
+      toast(t('Laden fehlgeschlagen', 'Loading failed'), err.message);
     }
   }
 
@@ -276,33 +277,33 @@ function backupSection() {
   paintList();
 
   return h('section', { class: 'section' },
-    h('h2', {}, 'Sicherung auf dem Desktop'),
-    h('p', {}, 'Laufzeit speichert deinen kompletten Stand automatisch im Ordner „Laufzeit-Sicherungen“ auf deinem Desktop: nach dem Lernen, beim Schließen und einmal am Tag. Pro Tag eine Datei, die letzten 14 Tage bleiben.'),
-    h('div', { class: 'field' }, h('span', {}, 'Automatisch sichern'),
-      segmented([[true, 'An'], [false, 'Aus']], store.state.settings.autoBackup !== false, v => store.update(s => { s.settings.autoBackup = v; }), 'Automatisch sichern')),
+    h('h2', {}, t('Sicherung auf dem Desktop', 'Backup on the desktop')),
+    h('p', {}, t('Laufzeit speichert deinen kompletten Stand automatisch im Ordner „Laufzeit-Sicherungen“ auf deinem Desktop: nach dem Lernen, beim Schließen und einmal am Tag. Pro Tag eine Datei, die letzten 14 Tage bleiben.', 'Laufzeit automatically saves your complete progress in the folder “Laufzeit-Sicherungen” on your desktop: after learning, when closing and once a day. One file per day, the last 14 days are kept.')),
+    h('div', { class: 'field' }, h('span', {}, t('Automatisch sichern', 'Automatic backup')),
+      segmented([[true, 'An'], [false, t('Aus', 'Off')]], store.state.settings.autoBackup !== false, v => store.update(s => { s.settings.autoBackup = v; }), t('Automatisch sichern', 'Automatic backup'))),
     status,
     h('div', { class: 'row-actions', style: { margin: 'var(--s3) 0 var(--s5)' } },
-      h('button', { type: 'button', class: 'btn btn-go', onclick: async e => { e.currentTarget.disabled = true; const r = await backupNow(); e.currentTarget.disabled = false; toast(r.ok ? 'Gesichert' : 'Sicherung fehlgeschlagen', r.ok ? r.name : r.error); } }, 'Jetzt sichern')),
-    h('p', { class: 'eyebrow' }, 'Vorhandene Sicherungen'),
+      h('button', { type: 'button', class: 'btn btn-go', onclick: async e => { e.currentTarget.disabled = true; const r = await backupNow(); e.currentTarget.disabled = false; toast(r.ok ? t('Gesichert', 'Saved') : t('Sicherung fehlgeschlagen', 'Backup failed'), r.ok ? r.name : r.error); } }, t('Jetzt sichern', 'Back up now'))),
+    h('p', { class: 'eyebrow' }, t('Vorhandene Sicherungen', 'Existing backups')),
     list,
     h('div', { class: 'row-actions', style: { marginTop: 'var(--s5)' } },
-      h('button', { type: 'button', class: 'btn btn-small', onclick: exportData }, h('span', { html: icon('copy', 16) }), 'Als Datei herunterladen'),
-      h('label', { class: 'btn btn-small' }, 'Datei laden', h('input', { type: 'file', accept: 'application/json,.json', class: 'sr-only', onchange: importData })),
-      h('button', { type: 'button', class: 'btn btn-small btn-bad', onclick: resetData }, 'Alles zurücksetzen')));
+      h('button', { type: 'button', class: 'btn btn-small', onclick: exportData }, h('span', { html: icon('copy', 16) }), t('Als Datei herunterladen', 'Download as file')),
+      h('label', { class: 'btn btn-small' }, t('Datei laden', 'Load file'), h('input', { type: 'file', accept: 'application/json,.json', class: 'sr-only', onchange: importData })),
+      h('button', { type: 'button', class: 'btn btn-small btn-bad', onclick: resetData }, t('Alles zurücksetzen', 'Reset everything'))));
 }
 
 /* ---------------------------------------------------------------- Konto */
 
 function accountSection() {
   if (!CLOUD_ENABLED) return null;
-  const sec = h('section', { class: 'section' }, h('h2', {}, 'Konto'));
+  const sec = h('section', { class: 'section' }, h('h2', {}, t('Konto', 'Account')));
   const user = currentUser();
   if (!user) {
     sec.append(
-      h('p', {}, 'Mit einem Konto ist dein Fortschritt auf jedem Gerät da, und du kannst Freunde hinzufügen, ihnen schreiben und sie anfeuern.'),
+      h('p', {}, t('Mit einem Konto ist dein Fortschritt auf jedem Gerät da, und du kannst Freunde hinzufügen, ihnen schreiben und sie anfeuern.', 'With an account your progress is on every device, and you can add friends, message them and cheer them on.')),
       h('div', { class: 'row-actions' },
-        h('a', { class: 'btn btn-go', href: '#/konto/registrieren' }, 'Konto erstellen'),
-        h('a', { class: 'btn btn-ghost', href: '#/konto' }, 'Einloggen')));
+        h('a', { class: 'btn btn-go', href: '#/konto/registrieren' }, t('Konto erstellen', 'Create account')),
+        h('a', { class: 'btn btn-ghost', href: '#/konto' }, t('Einloggen', 'Log in'))));
     return sec;
   }
   const blockedList = h('ul', { class: 'blocked-list' });
@@ -310,69 +311,69 @@ function accountSection() {
     blockedList.innerHTML = '';
     try {
       const ids = await blockedIds();
-      if (!ids.length) { blockedList.append(h('li', { class: 'muted' }, 'Niemand blockiert.')); return; }
+      if (!ids.length) { blockedList.append(h('li', { class: 'muted' }, t('Niemand blockiert.', 'Nobody blocked.'))); return; }
       const people = await profilesById(ids);
       ids.forEach(id => {
         const p = people[id];
-        blockedList.append(h('li', {}, h('span', {}, p ? `@${p.username}` : 'Gelöschtes Konto'),
+        blockedList.append(h('li', {}, h('span', {}, p ? `@${p.username}` : t('Gelöschtes Konto', 'Deleted account')),
           h('button', {
             type: 'button', class: 'btn btn-small btn-ghost',
             onclick: async () => {
-              try { await unblockUser(id); toast('Blockierung aufgehoben'); paintBlocked(); } catch (err) { toast('Hat nicht geklappt', germanError(err)); }
+              try { await unblockUser(id); toast(t('Blockierung aufgehoben', 'Unblocked')); paintBlocked(); } catch (err) { toast(t('Hat nicht geklappt', 'That didn\'t work'), germanError(err)); }
             },
-          }, 'Aufheben')));
+          }, t('Aufheben', 'Unblock'))));
       });
     } catch (err) {
       blockedList.append(h('li', { class: 'muted' }, germanError(err)));
     }
   }
   sec.append(
-    h('p', { class: 'account-line' }, h('span', { html: icon('check', 18) }), `Eingeloggt als ${user.email}`, myProfile() ? h('b', {}, ` · @${myProfile().username}`) : null),
-    h('p', { class: 'muted' }, 'Dein Fortschritt wird automatisch im Konto gespeichert. Auf einem anderen Gerät einfach einloggen.'),
+    h('p', { class: 'account-line' }, h('span', { html: icon('check', 18) }), t(`Eingeloggt als ${user.email}`, `Logged in as ${user.email}`), myProfile() ? h('b', {}, ` · @${myProfile().username}`) : null),
+    h('p', { class: 'muted' }, t('Dein Fortschritt wird automatisch im Konto gespeichert. Auf einem anderen Gerät einfach einloggen.', 'Your progress is saved to your account automatically. On another device, just log in.')),
     h('div', { class: 'row-actions' },
-      h('a', { class: 'btn btn-sky', href: '#/freunde' }, 'Freunde'),
-      h('a', { class: 'btn', href: '#/konto/neues-passwort' }, 'Passwort ändern'),
+      h('a', { class: 'btn btn-sky', href: '#/freunde' }, t('Freunde', 'Friends')),
+      h('a', { class: 'btn', href: '#/konto/neues-passwort' }, t('Passwort ändern', 'Change password')),
       h('button', {
         type: 'button', class: 'btn btn-ghost',
         onclick: async () => {
-          if (!(await confirmDialog({ title: 'Ausloggen?', text: 'Dein Stand ist im Konto gespeichert. Auf diesem Gerät wird danach alles geleert, bis du dich wieder einloggst.', ok: 'Ausloggen' }))) return;
+          if (!(await confirmDialog({ title: t('Ausloggen?', 'Log out?'), text: t('Dein Stand ist im Konto gespeichert. Auf diesem Gerät wird danach alles geleert, bis du dich wieder einloggst.', 'Your progress is saved in your account. On this device everything will be cleared until you log in again.'), ok: t('Ausloggen', 'Log out') }))) return;
           await logout();
-          toast('Ausgeloggt');
+          toast(t('Ausgeloggt', 'Logged out'));
           location.hash = '#/konto';
         },
-      }, h('span', { html: icon('logout', 16) }), 'Ausloggen')),
+      }, h('span', { html: icon('logout', 16) }), t('Ausloggen', 'Log out'))),
     h('details', { class: 'account-more', ontoggle: e => { if (e.currentTarget.open) paintBlocked(); } },
-      h('summary', {}, 'Blockierte Nutzer und Konto löschen'),
-      h('p', { class: 'eyebrow' }, 'Blockiert'),
+      h('summary', {}, t('Blockierte Nutzer und Konto löschen', 'Blocked users and deleting your account')),
+      h('p', { class: 'eyebrow' }, t('Blockiert', 'Blocked')),
       blockedList,
       h('div', { class: 'row-actions', style: { marginTop: 'var(--s4)' } },
         h('button', {
           type: 'button', class: 'btn btn-small btn-bad',
           onclick: async () => {
-            if (!(await confirmDialog({ title: 'Konto wirklich löschen?', text: 'Profil, Fortschritt im Konto, Freundschaften und Nachrichten werden endgültig gelöscht. Das kann niemand rückgängig machen.', ok: 'Endgültig löschen', danger: true }))) return;
+            if (!(await confirmDialog({ title: t('Konto wirklich löschen?', 'Really delete your account?'), text: t('Profil, Fortschritt im Konto, Freundschaften und Nachrichten werden endgültig gelöscht. Das kann niemand rückgängig machen.', 'Profile, progress in your account, friendships and messages are deleted permanently. Nobody can undo this.'), ok: t('Endgültig löschen', 'Delete permanently'), danger: true }))) return;
             try {
               await deleteAccount();
-              toast('Konto gelöscht');
+              toast(t('Konto gelöscht', 'Account deleted'));
               location.hash = '#/start';
             } catch (err) {
-              toast('Löschen fehlgeschlagen', germanError(err));
+              toast(t('Löschen fehlgeschlagen', 'Deleting failed'), germanError(err));
             }
           },
-        }, 'Konto löschen'))));
+        }, t('Konto löschen', 'Delete account')))));
   return sec;
 }
 
 /** Online: keine Desktop-Sicherung, aber Datei-Export */
 function webDataSection() {
   return h('section', { class: 'section' },
-    h('h2', {}, 'Deine Daten'),
+    h('h2', {}, t('Deine Daten', 'Your data')),
     h('p', {}, currentUser()
-      ? 'Dein Stand liegt in diesem Browser und in deinem Konto. Zusätzlich kannst du ihn als Datei speichern.'
-      : 'Ohne Konto liegt dein Stand nur in diesem Browser. Speicher ihn ab und zu als Datei, oder erstell ein Konto.'),
+      ? t('Dein Stand liegt in diesem Browser und in deinem Konto. Zusätzlich kannst du ihn als Datei speichern.', 'Your progress is stored in this browser and in your account. You can also save it as a file.')
+      : t('Ohne Konto liegt dein Stand nur in diesem Browser. Speicher ihn ab und zu als Datei, oder erstell ein Konto.', 'Without an account your progress is only stored in this browser. Save it as a file now and then, or create an account.')),
     h('div', { class: 'row-actions' },
-      h('button', { type: 'button', class: 'btn btn-small', onclick: exportData }, h('span', { html: icon('copy', 16) }), 'Als Datei herunterladen'),
-      h('label', { class: 'btn btn-small' }, 'Datei laden', h('input', { type: 'file', accept: 'application/json,.json', class: 'sr-only', onchange: importData })),
-      h('button', { type: 'button', class: 'btn btn-small btn-bad', onclick: resetData }, 'Alles zurücksetzen')));
+      h('button', { type: 'button', class: 'btn btn-small', onclick: exportData }, h('span', { html: icon('copy', 16) }), t('Als Datei herunterladen', 'Download as file')),
+      h('label', { class: 'btn btn-small' }, t('Datei laden', 'Load file'), h('input', { type: 'file', accept: 'application/json,.json', class: 'sr-only', onchange: importData })),
+      h('button', { type: 'button', class: 'btn btn-small btn-bad', onclick: resetData }, t('Alles zurücksetzen', 'Reset everything'))));
 }
 
 /* ---------------------------------------------------------------- Seite */
@@ -389,32 +390,35 @@ export function renderProfile(main) {
     h('div', { class: 'facts' },
       ...LANG_IDS.filter(id => s.courses.includes(id)).map(id => {
         const p = courseProgress(id);
-        return h('div', { class: 'fact' }, h('b', {}, `${p.done}/${p.total}`), h('span', {}, `${COURSES[id].name}-Lektionen, ${s.langs[id].xp} XP`));
+        return h('div', { class: 'fact' }, h('b', {}, `${p.done}/${p.total}`), h('span', {}, t(`${COURSES[id].name}-Lektionen, ${s.langs[id].xp} XP`, `${COURSES[id].name} lessons, ${s.langs[id].xp} XP`)));
       }),
-      h('div', { class: 'fact' }, h('b', {}, s.streak.best), h('span', {}, 'längste Serie'))),
+      h('div', { class: 'fact' }, h('b', {}, s.streak.best), h('span', {}, t('längste Serie', 'longest streak')))),
 
     aboutSection(),
 
-    h('section', { class: 'section' }, h('h2', {}, 'Letzte 14 Tage'), history()),
+    h('section', { class: 'section' }, h('h2', {}, t('Letzte 14 Tage', 'Last 14 days')), history()),
 
     h('section', { class: 'section' },
-      h('h2', {}, `Abzeichen ${unlocked}/${BADGES.length}`),
+      h('h2', {}, t(`Abzeichen ${unlocked}/${BADGES.length}`, `Badges ${unlocked}/${BADGES.length}`)),
       h('ul', { class: 'badge-list' }, BADGES.map(b => {
         const got = s.badges[b.id];
         return h('li', { class: got ? '' : 'is-locked' },
           h('span', { class: `seal${got ? '' : ' is-locked'}`, 'aria-hidden': 'true' }, b.mark),
-          h('div', {}, h('strong', {}, b.name), h('span', {}, got ? `${b.desc} Erhalten am ${new Date(got).toLocaleDateString('de-DE')}.` : b.desc)));
+          h('div', {}, h('strong', {}, b.name), h('span', {}, got ? t(`${b.desc} Erhalten am ${new Date(got).toLocaleDateString(locale())}.`, `${b.desc} Earned on ${new Date(got).toLocaleDateString(locale())}.`) : b.desc)));
       }))),
 
     h('section', { class: 'section' },
-      h('h2', {}, 'Einstellungen'),
-      h('div', { class: 'field' }, h('span', {}, 'Darstellung'),
-        segmented([['auto', 'Wie System'], ['light', 'Hell'], ['dark', 'Dunkel']], s.settings.theme,
-          v => { store.update(st => { st.settings.theme = v; }); applyTheme(); }, 'Darstellung')),
-      h('div', { class: 'field' }, h('span', {}, 'Tagesziel'),
+      h('h2', {}, t('Einstellungen', 'Settings')),
+      h('div', { class: 'field' }, h('span', {}, 'Sprache · Language'),
+        segmented([['de', 'Deutsch'], ['en', 'English']], uiLang(),
+          v => { if (v !== uiLang()) { setUiLang(v); location.reload(); } }, 'Sprache · Language')),
+      h('div', { class: 'field' }, h('span', {}, t('Darstellung', 'Appearance')),
+        segmented([['auto', t('Wie System', 'System')], ['light', t('Hell', 'Light')], ['dark', t('Dunkel', 'Dark')]], s.settings.theme,
+          v => { store.update(st => { st.settings.theme = v; }); applyTheme(); }, t('Darstellung', 'Appearance'))),
+      h('div', { class: 'field' }, h('span', {}, t('Tagesziel', 'Daily goal')),
         segmented([[10, '10 XP'], [30, '30 XP'], [50, '50 XP'], [100, '100 XP']], s.settings.dailyGoal,
-          v => store.update(st => { st.settings.dailyGoal = v; }), 'Tagesziel'),
-        h('small', { class: 'muted' }, 'Eine Lektion bringt etwa 15 bis 22 XP.'))),
+          v => store.update(st => { st.settings.dailyGoal = v; }), t('Tagesziel', 'Daily goal')),
+        h('small', { class: 'muted' }, t('Eine Lektion bringt etwa 15 bis 22 XP.', 'A lesson gives about 15 to 22 XP.')))),
 
     accountSection(),
     IS_WEB ? webDataSection() : backupSection());
@@ -440,14 +444,14 @@ async function importData(e) {
   if (!file) return;
   try {
     const text = await file.text();
-    const ok = await confirmDialog({ title: 'Sicherung laden?', text: 'Dein aktueller Fortschritt wird durch die Sicherung ersetzt.', ok: 'Laden' });
+    const ok = await confirmDialog({ title: t('Sicherung laden?', 'Load backup?'), text: t('Dein aktueller Fortschritt wird durch die Sicherung ersetzt.', 'Your current progress will be replaced by the backup.'), ok: t('Laden', 'Load') });
     if (!ok) return;
     store.importJSON(text);
     applyTheme();
-    toast('Sicherung geladen');
+    toast(t('Sicherung geladen', 'Backup loaded'));
     location.hash = '#/pfad';
   } catch (err) {
-    toast('Laden fehlgeschlagen', err.message);
+    toast(t('Laden fehlgeschlagen', 'Loading failed'), err.message);
   } finally {
     e.target.value = '';
   }
@@ -455,11 +459,11 @@ async function importData(e) {
 
 async function resetData() {
   const ok = await confirmDialog({
-    title: 'Wirklich alles zurücksetzen?',
+    title: t('Wirklich alles zurücksetzen?', 'Really reset everything?'),
     text: IS_WEB
-      ? `XP, Serie, Abzeichen und alle abgeschlossenen Lektionen werden gelöscht${currentUser() ? ', auch im Konto' : ''}. Lad dir vorher eine Datei herunter, wenn du den Stand behalten willst.`
-      : 'XP, Serie, Abzeichen, Profil und alle abgeschlossenen Lektionen werden gelöscht. Vorher wird der aktuelle Stand noch auf dem Desktop gesichert.',
-    ok: 'Zurücksetzen',
+      ? t(`XP, Serie, Abzeichen und alle abgeschlossenen Lektionen werden gelöscht${currentUser() ? ', auch im Konto' : ''}. Lad dir vorher eine Datei herunter, wenn du den Stand behalten willst.`, `XP, streak, badges and all completed lessons will be deleted${currentUser() ? ', also in your account' : ''}. Download a file first if you want to keep your progress.`)
+      : t('XP, Serie, Abzeichen, Profil und alle abgeschlossenen Lektionen werden gelöscht. Vorher wird der aktuelle Stand noch auf dem Desktop gesichert.', 'XP, streak, badges, profile and all completed lessons will be deleted. Your current progress is saved to the desktop first.'),
+    ok: t('Zurücksetzen', 'Reset'),
     danger: true,
   });
   if (!ok) return;
@@ -467,6 +471,6 @@ async function resetData() {
   const keep = currentUser() ? { ...store.state.profile } : null;
   store.reset();
   if (keep) store.update(s => { Object.assign(s.profile, { name: keep.name, username: keep.username, bio: keep.bio, avatar: keep.avatar, banner: keep.banner }); });
-  toast('Zurückgesetzt', IS_WEB ? 'Alles auf Anfang.' : 'Alles auf Anfang. Die Sicherung liegt auf dem Desktop.');
+  toast(t('Zurückgesetzt', 'Reset done'), IS_WEB ? t('Alles auf Anfang.', 'Back to the start.') : t('Alles auf Anfang. Die Sicherung liegt auf dem Desktop.', 'Back to the start. The backup is on your desktop.'));
   location.hash = '#/start';
 }

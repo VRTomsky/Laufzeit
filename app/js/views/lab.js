@@ -1,5 +1,6 @@
 // Labor: freier Editor, der Code wirklich auf diesem PC ausfuehrt
 
+import { t, locale } from '../i18n.js';
 import { h, confirmDialog } from '../util.js';
 import { icon } from '../icons.js';
 import { store } from '../store.js';
@@ -11,14 +12,14 @@ import { cppMain } from '../content/helpers.js';
 
 const EXAMPLES = {
   python: [
-    ['Leer', 'print("Hallo aus dem Labor")\n'],
-    ['Zahlenraten', 'import random\n\nziel = random.randint(1, 20)\nversuche = 0\n\nwhile True:\n    tipp = int(input("Dein Tipp (1-20): "))\n    versuche += 1\n    if tipp < ziel:\n        print("Zu klein")\n    elif tipp > ziel:\n        print("Zu groß")\n    else:\n        print(f"Richtig! {versuche} Versuche.")\n        break\n'],
-    ['Einmaleins', 'for zeile in range(1, 6):\n    for spalte in range(1, 6):\n        print(f"{zeile * spalte:4}", end="")\n    print()\n'],
+    [t('Leer', 'Empty'), 'print("Hallo aus dem Labor")\n'],
+    [t('Zahlenraten', 'Guess the number'), 'import random\n\nziel = random.randint(1, 20)\nversuche = 0\n\nwhile True:\n    tipp = int(input("Dein Tipp (1-20): "))\n    versuche += 1\n    if tipp < ziel:\n        print("Zu klein")\n    elif tipp > ziel:\n        print("Zu groß")\n    else:\n        print(f"Richtig! {versuche} Versuche.")\n        break\n'],
+    [t('Einmaleins', 'Times table'), 'for zeile in range(1, 6):\n    for spalte in range(1, 6):\n        print(f"{zeile * spalte:4}", end="")\n    print()\n'],
   ],
   cpp: [
-    ['Leer', cppMain('std::cout << "Hallo aus dem Labor" << std::endl;') + '\n'],
+    [t('Leer', 'Empty'), cppMain('std::cout << "Hallo aus dem Labor" << std::endl;') + '\n'],
     ['Game-Loop', cppMain('int x = 0;\nint ziel = 10;\nint frame = 0;\n\nwhile (x < ziel) {\n    frame++;\n    x += 3;                 // Update\n    if (x > ziel) x = ziel;\n    std::cout << "Frame " << frame << ": ";\n    for (int i = 0; i < ziel; i++) {\n        std::cout << (i == x - 1 ? "@" : ".");   // Render\n    }\n    std::cout << std::endl;\n}\nstd::cout << "Ziel erreicht" << std::endl;') + '\n'],
-    ['Schadensrechner', cppMain('int hp;\nint schaden;\nstd::cout << "HP und Schaden: ";\nstd::cin >> hp >> schaden;\nhp -= schaden;\nif (hp <= 0) {\n    std::cout << "Besiegt" << std::endl;\n} else {\n    std::cout << "Rest-HP: " << hp << std::endl;\n}') + '\n'],
+    [t('Schadensrechner', 'Damage calculator'), cppMain('int hp;\nint schaden;\nstd::cout << "HP und Schaden: ";\nstd::cin >> hp >> schaden;\nhp -= schaden;\nif (hp <= 0) {\n    std::cout << "Besiegt" << std::endl;\n} else {\n    std::cout << "Rest-HP: " << hp << std::endl;\n}') + '\n'],
   ],
 };
 
@@ -27,7 +28,7 @@ export function renderLab(main) {
   const course = COURSES[lang];
   const saved = store.state.lab[lang];
   const out = consolePanel();
-  const runtime = h('span', { class: 'runtime-line' }, 'Prüfe Werkzeuge ...');
+  const runtime = h('span', { class: 'runtime-line' }, t('Prüfe Werkzeuge ...', 'Checking tools ...'));
   let busy = false;
   let saveTimer = null;
 
@@ -35,7 +36,7 @@ export function renderLab(main) {
     value: saved ?? EXAMPLES[lang][0][1],
     lang,
     minLines: 16,
-    label: `${course.name}-Code`,
+    label: t(`${course.name}-Code`, `${course.name} code`),
     onRun: () => run(),
     onChange: value => {
       clearTimeout(saveTimer);
@@ -45,8 +46,8 @@ export function renderLab(main) {
 
   const stdin = h('textarea', {
     class: 'lab-stdin',
-    placeholder: lang === 'cpp' ? 'Eingaben für std::cin, z. B. 100 25' : 'Eingaben für input(), eine pro Zeile',
-    'aria-label': 'Eingaben für das Programm',
+    placeholder: lang === 'cpp' ? t('Eingaben für std::cin, z. B. 100 25', 'Input for std::cin, e.g. 100 25') : t('Eingaben für input(), eine pro Zeile', 'Input for input(), one per line'),
+    'aria-label': t('Eingaben für das Programm', 'Input for the program'),
     spellcheck: 'false',
   });
 
@@ -63,35 +64,35 @@ export function renderLab(main) {
     runBtn.disabled = false;
   }
 
-  const runBtn = h('button', { type: 'button', class: 'btn btn-go', onclick: run }, h('span', { html: icon('run', 18) }), 'Ausführen');
+  const runBtn = h('button', { type: 'button', class: 'btn btn-go', onclick: run }, h('span', { html: icon('run', 18) }), t('Ausführen', 'Run'));
 
   main.append(
     h('header', { class: 'page-head' },
-      h('p', { class: 'eyebrow' }, `Labor · ${course.name}`),
-      h('h1', { class: 'display' }, 'Labor'),
-      h('p', { class: 'lede' }, 'Freie Spielwiese. Schreib beliebigen Code und führe ihn direkt auf deinem PC aus. Dein Code wird automatisch gemerkt.')),
+      h('p', { class: 'eyebrow' }, t(`Labor · ${course.name}`, `Lab · ${course.name}`)),
+      h('h1', { class: 'display' }, t('Labor', 'Lab')),
+      h('p', { class: 'lede' }, t('Freie Spielwiese. Schreib beliebigen Code und führe ihn direkt auf deinem PC aus. Dein Code wird automatisch gemerkt.', 'Free playground. Write any code and run it directly. Your code is remembered automatically.'))),
     h('div', { class: 'section', style: { maxWidth: '980px' } },
-      h('div', { class: 'lab-examples' }, h('span', {}, 'Beispiele:'),
+      h('div', { class: 'lab-examples' }, h('span', {}, t('Beispiele:', 'Examples:')),
         EXAMPLES[lang].map(([name, code]) => h('button', {
           type: 'button',
           class: 'btn btn-small',
           onclick: async () => {
             const current = editor.value.trim();
             const isExample = EXAMPLES[lang].some(([, c]) => c.trim() === current);
-            if (current && !isExample && !(await confirmDialog({ title: 'Code ersetzen?', text: 'Dein aktueller Code im Labor wird durch das Beispiel ersetzt.', ok: 'Ersetzen' }))) return;
+            if (current && !isExample && !(await confirmDialog({ title: t('Code ersetzen?', 'Replace code?'), text: t('Dein aktueller Code im Labor wird durch das Beispiel ersetzt.', 'Your current code in the Lab will be replaced by the example.'), ok: t('Ersetzen', 'Replace') }))) return;
             editor.setValue(code);
             editor.focus();
           },
         }, name))),
       editor.el,
-      h('div', { class: 'ed-bar' }, h('span', { class: 'hint-key' }, 'Strg+Enter: Ausführen')),
+      h('div', { class: 'ed-bar' }, h('span', { class: 'hint-key' }, t('Strg+Enter: Ausführen', 'Ctrl+Enter: run'))),
       h('div', { class: 'lab-tools' }, runBtn, runtime),
-      h('label', { class: 'field' }, h('span', {}, 'Eingaben (optional)'), stdin),
+      h('label', { class: 'field' }, h('span', {}, t('Eingaben (optional)', 'Input (optional)')), stdin),
       out.el));
 
   getStatus(true).then(status => {
-    if (!status.online) runtime.textContent = 'Server nicht erreichbar. Läuft start.bat?';
-    else if (lang === 'cpp') runtime.textContent = status.cpp ? `läuft mit ${status.cpp.version}` : status.ready ? 'Kein C++-Compiler gefunden. Siehe Werkstatt.' : 'Compiler wird noch gesucht ...';
-    else runtime.textContent = status.python ? `läuft mit ${status.python.version}` : 'Python nicht gefunden.';
+    if (!status.online) runtime.textContent = t('Server nicht erreichbar. Läuft start.bat?', 'Server not reachable. Is start.bat running?');
+    else if (lang === 'cpp') runtime.textContent = status.cpp ? t(`läuft mit ${status.cpp.version}`, `runs with ${status.cpp.version}`) : status.ready ? t('Kein C++-Compiler gefunden. Siehe Werkstatt.', 'No C++ compiler found. See Workshop.') : t('Compiler wird noch gesucht ...', 'Still looking for a compiler ...');
+    else runtime.textContent = status.python ? t(`läuft mit ${status.python.version}`, `runs with ${status.python.version}`) : t('Python nicht gefunden.', 'Python not found.');
   });
 }

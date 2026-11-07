@@ -1,22 +1,23 @@
 // Zuschneide-Fenster: Bild verschieben und zoomen, der Rahmen zeigt den fertigen Ausschnitt.
 // cropImage(file, breite, hoehe, { round, title }) liefert ein JPEG als data-URL oder null (abgebrochen).
 
+import { t, locale } from './i18n.js';
 import { h, showModal } from './util.js';
 
 const MAX_ZOOM = 4;
 
 function loadImage(file) {
   return new Promise((resolve, reject) => {
-    if (!file || !file.type.startsWith('image/')) { reject(new Error('Das ist kein Bild.')); return; }
+    if (!file || !file.type.startsWith('image/')) { reject(new Error(t('Das ist kein Bild.', 'That\'s not an image.'))); return; }
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => resolve({ img, url });
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Das Bild ließ sich nicht öffnen.')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t('Das Bild ließ sich nicht öffnen.', 'The image couldn\'t be opened.'))); };
     img.src = url;
   });
 }
 
-export async function cropImage(file, outW, outH, { round = false, title = 'Ausschnitt wählen' } = {}) {
+export async function cropImage(file, outW, outH, { round = false, title = t('Ausschnitt wählen', 'Choose the crop') } = {}) {
   const { img, url } = await loadImage(file);
 
   return new Promise(resolve => {
@@ -35,7 +36,7 @@ export async function cropImage(file, outW, outH, { round = false, title = 'Auss
       style: { width: `${frameW}px`, height: `${frameH}px` },
       tabindex: '0',
       role: 'application',
-      'aria-label': 'Bildausschnitt. Ziehen oder Pfeiltasten zum Verschieben, Plus und Minus zum Zoomen.',
+      'aria-label': t('Bildausschnitt. Ziehen oder Pfeiltasten zum Verschieben, Plus und Minus zum Zoomen.', 'Image crop. Drag or use arrow keys to move, plus and minus to zoom.'),
     }, pic, h('span', { class: 'crop-grid', 'aria-hidden': 'true' }));
     const slider = h('input', { type: 'range', min: '1', max: String(MAX_ZOOM), step: '0.01', value: '1', class: 'crop-zoom', 'aria-label': 'Zoom' });
 
@@ -118,12 +119,12 @@ export async function cropImage(file, outW, outH, { round = false, title = 'Auss
 
     const dlg = h('dialog', { class: 'confirm crop-dialog' },
       h('h2', {}, title),
-      h('p', { class: 'muted' }, 'Zieh das Bild in die richtige Position. Mit dem Regler oder dem Mausrad zoomst du.'),
+      h('p', { class: 'muted' }, t('Zieh das Bild in die richtige Position. Mit dem Regler oder dem Mausrad zoomst du.', 'Drag the image into the right position. Zoom with the slider or the mouse wheel.')),
       h('div', { class: 'crop-stage' }, frame),
       h('label', { class: 'crop-zoom-row' }, h('span', { 'aria-hidden': 'true' }, '−'), slider, h('span', { 'aria-hidden': 'true' }, '+')),
       h('div', { class: 'row-actions' },
-        h('button', { type: 'button', class: 'btn', onclick: () => finish(null) }, 'Abbrechen'),
-        h('button', { type: 'button', class: 'btn btn-go', onclick: apply }, 'Übernehmen')));
+        h('button', { type: 'button', class: 'btn', onclick: () => finish(null) }, t('Abbrechen', 'Cancel')),
+        h('button', { type: 'button', class: 'btn btn-go', onclick: apply }, t('Übernehmen', 'Apply'))));
     dlg.addEventListener('cancel', e => { e.preventDefault(); finish(null); });
 
     paint();
