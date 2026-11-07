@@ -6,7 +6,7 @@ import { icon } from '../icons.js';
 import { store } from '../store.js';
 import { COURSES } from '../content/index.js';
 import { createEditor } from '../editor.js';
-import { runCode, getStatus } from '../runner.js';
+import { runCode, getStatus, needsInput } from '../runner.js';
 import { consolePanel } from './exercises.js';
 import { cppMain } from '../content/helpers.js';
 
@@ -51,17 +51,53 @@ export function renderLab(main) {
     spellcheck: 'false',
   });
 
+  // Python laeuft im Terminal-Stil: bei jedem input() fragt die Konsole nach.
+  // Technisch wird das Programm mit allen bisherigen Antworten neu gestartet,
+  // der Zufall ist pro Durchlauf fest, darum sieht es aus wie ein durchgehender Lauf.
+  let session = 0;
+  const MAX_ANSWERS = 200;
+
   async function run() {
     if (busy) return;
     busy = true;
     runBtn.disabled = true;
+    const mine = ++session;
     const status = await getStatus();
-    out.running(lang === 'cpp' ? status.cpp?.version || 'Compiler' : status.python?.version);
-    const res = await runCode(lang, editor.value, stdin.value);
-    const info = out.show(res, lang);
-    editor.markLine(info.line);
-    busy = false;
-    runBtn.disabled = false;
+    const tool = lang === 'cpp' ? status.cpp?.version || 'Compiler' : status.python?.version;
+    out.running(tool);
+    if (lang !== 'python') {
+      const res = await runCode(lang, editor.value, stdin.value);
+      editor.markLine(out.show(res, lang).line);
+      busy = false;
+      runBtn.disabled = false;
+      return;
+    }
+    const code = editor.value;
+    const seed = Math.floor(Math.random() * 1e9);
+    const answers = [];
+    const step = async () => {
+      if (mine !== session) return;
+      const input = answers.length ? `${answers.join('\n')}\n` : '';
+      const res = await runCode('python', code, input, { interactive: seed });
+      if (mine !== session) return;
+      if (needsInput(res) && answers.length < MAX_ANSWERS) {
+        busy = false;
+        runBtn.disabled = false;
+        editor.markLine(null);
+        out.ask((res.stdout || '').replace(/\r\n?/g, '\n'), res.tool || tool, value => {
+          if (mine !== session) return;
+          answers.push(value);
+          busy = true;
+          runBtn.disabled = true;
+          step();
+        });
+        return;
+      }
+      editor.markLine(out.show(res, lang).line);
+      busy = false;
+      runBtn.disabled = false;
+    };
+    step();
   }
 
   const runBtn = h('button', { type: 'button', class: 'btn btn-go', onclick: run }, h('span', { html: icon('run', 18) }), t('Ausführen', 'Run'));
@@ -70,7 +106,9 @@ export function renderLab(main) {
     h('header', { class: 'page-head' },
       h('p', { class: 'eyebrow' }, t(`Labor · ${course.name}`, `Lab · ${course.name}`)),
       h('h1', { class: 'display' }, t('Labor', 'Lab')),
-      h('p', { class: 'lede' }, t('Freie Spielwiese. Schreib beliebigen Code und führe ihn direkt auf deinem PC aus. Dein Code wird automatisch gemerkt.', 'Free playground. Write any code and run it directly. Your code is remembered automatically.'))),
+      h('p', { class: 'lede' }, lang === 'python'
+        ? t('Freie Spielwiese. Schreib beliebigen Code und führe ihn aus. Fragt dein Programm mit input() etwas, tippst du die Antwort direkt in die Ausgabe, wie im Terminal. Dein Code wird automatisch gemerkt.', 'Free playground. Write any code and run it. When your program asks something with input(), you type the answer right into the output, like in a terminal. Your code is remembered automatically.')
+        : t('Freie Spielwiese. Schreib beliebigen Code und führe ihn direkt auf deinem PC aus. Eingaben für std::cin trägst du vorher unten ein. Dein Code wird automatisch gemerkt.', 'Free playground. Write any code and run it directly. Enter input for std::cin below beforehand. Your code is remembered automatically.'))),
     h('div', { class: 'section', style: { maxWidth: '980px' } },
       h('div', { class: 'lab-examples' }, h('span', {}, t('Beispiele:', 'Examples:')),
         EXAMPLES[lang].map(([name, code]) => h('button', {
@@ -87,7 +125,7 @@ export function renderLab(main) {
       editor.el,
       h('div', { class: 'ed-bar' }, h('span', { class: 'hint-key' }, t('Strg+Enter: Ausführen', 'Ctrl+Enter: run'))),
       h('div', { class: 'lab-tools' }, runBtn, runtime),
-      h('label', { class: 'field' }, h('span', {}, t('Eingaben (optional)', 'Input (optional)')), stdin),
+      lang === 'cpp' ? h('label', { class: 'field' }, h('span', {}, t('Eingaben (optional)', 'Input (optional)')), stdin) : null,
       out.el));
 
   getStatus(true).then(status => {

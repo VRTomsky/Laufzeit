@@ -317,6 +317,30 @@ export function consolePanel() {
       pre.innerHTML = t(`<span class="is-dim">${tool && tool.includes('Compiler') ? 'Kompiliere und starte ...' : 'Läuft ...'}</span>\n`, `<span class="is-dim">${tool && tool.includes('Compiler') ? 'Compiling and starting ...' : 'Running ...'}</span>\n`);
       hint.hidden = true;
     },
+    /** Terminal-Stil: bisherige Ausgabe zeigen und direkt dahinter eine Eingabe abfragen */
+    ask(text, tool, onAnswer) {
+      el.classList.remove('is-running');
+      head.firstChild.textContent = t('Wartet auf deine Eingabe', 'Waiting for your input');
+      head.lastChild.textContent = tool || '';
+      pre.innerHTML = '';
+      if (text) pre.append(h('span', {}, text));
+      const field = h('input', {
+        class: 'console-input', type: 'text', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off',
+        'aria-label': t('Deine Eingabe für das Programm', 'Your input for the program'),
+      });
+      field.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        e.stopPropagation();
+        field.disabled = true;
+        onAnswer(field.value);
+      });
+      pre.append(field);
+      hint.hidden = false;
+      hint.innerHTML = t('Tippe deine Antwort hier ein und drück <strong>Enter</strong>, wie im Terminal.', 'Type your answer here and press <strong>Enter</strong>, like in a terminal.');
+      setTimeout(() => field.focus(), 30);
+      return field;
+    },
     show(res, lang) {
       el.classList.remove('is-running');
       const info = describeRun(res, lang);

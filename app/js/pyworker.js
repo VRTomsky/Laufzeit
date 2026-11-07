@@ -16,12 +16,21 @@ class _LzOut(io.StringIO):
             return super().write(s)
         return len(s)
 
-def _lz_run(src, stdin, quiet):
+def _lz_run(src, stdin, quiet, seed=None):
     out, err = _LzOut(), _LzOut()
     old = (sys.stdin, sys.stdout, sys.stderr)
     sys.stdin, sys.stdout, sys.stderr = io.StringIO(stdin), out, err
     g = {"__name__": "__main__", "__builtins__": builtins}
-    if quiet:
+    if seed is not None:
+        import random
+        random.seed(seed)
+        _orig = builtins.input
+        def _echo(prompt=""):
+            v = _orig(prompt)
+            print(v)
+            return v
+        g["input"] = _echo
+    elif quiet:
         _orig = builtins.input
         g["input"] = lambda prompt="": _orig()
     exit_code = 0
@@ -58,7 +67,7 @@ onmessage = async ({ data }) => {
   const py = await ready;
   const fn = py.globals.get('_lz_run');
   try {
-    const result = fn(data.code, data.stdin || '', !!data.quietInput);
+    const result = fn(data.code, data.stdin || '', !!data.quietInput, Number.isInteger(data.seed) ? data.seed : null);
     const [stdout, stderr, exitCode] = result.toJs();
     result.destroy();
     postMessage({ type: 'result', id: data.id, stdout, stderr, exitCode });

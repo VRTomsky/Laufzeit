@@ -35,12 +35,12 @@ export async function getStatus(force = false) {
  * Fuehrt Code aus: lokal ueber server.py, online Python im Browser.
  * Antwort: { available, ok, stage: 'compile' | 'run', stdout, stderr, compileLog, timedOut, tool }
  */
-export async function runCode(lang, code, stdin = '', { quietInput = false } = {}) {
+export async function runCode(lang, code, stdin = '', { quietInput = false, interactive = null } = {}) {
   let res;
   if (IS_WEB) {
     if (lang !== 'python') return { available: false, reason: CPP_WEB_REASON };
     const { runWebPython } = await import('./webpython.js');
-    res = await runWebPython(code, stdin, quietInput);
+    res = await runWebPython(code, stdin, quietInput, interactive);
     if (res.available && !res.timedOut) store.update(s => { s.stats.runs[lang] = (s.stats.runs[lang] || 0) + 1; });
     return res;
   }
@@ -48,7 +48,7 @@ export async function runCode(lang, code, stdin = '', { quietInput = false } = {
     const response = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Laufzeit': '1' },
-      body: JSON.stringify({ lang, code, stdin, quietInput }),
+      body: JSON.stringify({ lang, code, stdin, quietInput, interactive }),
     });
     if (!response.ok) throw new Error(String(response.status));
     res = await response.json();
@@ -63,6 +63,11 @@ export async function runCode(lang, code, stdin = '', { quietInput = false } = {
 }
 
 /** Bereitet ein Ergebnis fuer die Konsole auf: Text, Hinweis, Fehlerzeile */
+/** Wartet das Programm auf eine weitere Eingabe? (Python-Labor, Terminal-Stil) */
+export function needsInput(res) {
+  return Boolean(res && res.available && !res.ok && !res.timedOut && /EOFError: EOF when reading a line/.test(res.stderr || ''));
+}
+
 export function describeRun(res, lang) {
   if (!res.available) return { text: res.reason, isError: true, hint: null, line: null };
   if (res.stage === 'compile' && !res.ok) {

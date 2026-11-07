@@ -368,6 +368,34 @@ function timeText(iso) {
   return today ? d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
+/** Bildvorschau im Chat: dunkler Hintergrund, Bild groß, schließen mit X, Esc oder Klick daneben */
+function openLightbox(url, a) {
+  let release = () => {};
+  const img = h('img', { class: 'lightbox-img', src: url, alt: a.name || t('Bild', 'Image') });
+  const close = () => { dlg.close(); release(); dlg.remove(); };
+  const download = async () => {
+    try {
+      const href = await attachmentUrl(a.path, a.name || true);
+      const link = h('a', { href, download: a.name || 'bild', rel: 'noopener' });
+      document.body.append(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      toast(t('Download nicht möglich', 'Download not possible'), germanError(err));
+    }
+  };
+  const kb = Math.max(1, Math.round((a.size || 0) / 1024));
+  const dlg = h('dialog', { class: 'lightbox', 'aria-label': t('Bildvorschau', 'Image preview') },
+    h('div', { class: 'lightbox-bar' },
+      h('span', { class: 'lightbox-name' }, h('b', {}, a.name || t('Bild', 'Image')), h('small', {}, kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`)),
+      h('button', { type: 'button', class: 'lightbox-btn', onclick: download, title: t('Herunterladen', 'Download') }, h('span', { html: icon('file', 20) }), t('Herunterladen', 'Download')),
+      h('button', { type: 'button', class: 'lightbox-btn is-close', onclick: close, 'aria-label': t('Schließen', 'Close'), html: icon('close', 22) })),
+    h('div', { class: 'lightbox-stage' }, img));
+  dlg.addEventListener('click', e => { if (e.target === dlg || e.target.classList.contains('lightbox-stage')) close(); });
+  dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  release = showModal(dlg);
+}
+
 export async function renderChat(main, username) {
   if (!CLOUD_ENABLED) { signedOut(main); return; }
   await initCloud();
@@ -408,9 +436,12 @@ export async function renderChat(main, username) {
     const isImg = /^image\//.test(a.type || '');
     if (isImg) {
       const img = h('img', { class: 'msg-img', alt: a.name || t('Bild', 'Image'), loading: 'lazy' });
-      const link = h('a', { class: 'msg-img-link', target: '_blank', rel: 'noopener', title: t('In voller Größe öffnen', 'Open full size') }, img);
-      attachmentUrl(a.path).then(url => { img.src = url; link.href = url; img.addEventListener('load', scroll, { once: true }); })
-        .catch(() => { link.replaceWith(h('span', { class: 'msg-file is-missing' }, t('Bild nicht verfügbar', 'Image not available'))); });
+      const link = h('button', { type: 'button', class: 'msg-img-link', title: t('Vorschau öffnen', 'Open preview'), 'aria-label': t(`Bild ${a.name || ''} ansehen`, `View image ${a.name || ''}`) }, img);
+      attachmentUrl(a.path).then(url => {
+        img.src = url;
+        img.addEventListener('load', scroll, { once: true });
+        link.onclick = () => openLightbox(url, a);
+      }).catch(() => { link.replaceWith(h('span', { class: 'msg-file is-missing' }, t('Bild nicht verfügbar', 'Image not available'))); });
       return link;
     }
     const kb = Math.max(1, Math.round((a.size || 0) / 1024));

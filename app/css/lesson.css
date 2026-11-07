@@ -457,3 +457,19 @@ input.gap:focus { outline: none; border-style: solid; border-color: var(--accent
 }
 .lesson-body [inert] { opacity: .92; }
 .review-actions { flex-wrap: wrap; justify-content: flex-end; }
+
+/* Eingabe direkt in der Konsole (Labor, Terminal-Stil) */
+.console-input {
+  display: inline-block;
+  width: 18ch;
+  max-width: 100%;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 2px solid var(--leaf);
+  background: transparent;
+  color: var(--t-str, #A6E07E);
+  font: inherit;
+  outline: none;
+  caret-color: var(--leaf);
+}
+.console-input:disabled { border-bottom-color: transparent; opacity: .7; }

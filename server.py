@@ -51,6 +51,13 @@ NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 # deshalb werden Zeilennummern in Fehlermeldungen danach um 1 korrigiert.
 QUIET_INPUT_PRELUDE = "import builtins as _lz_b; input = lambda prompt='', _f=_lz_b.input: _f()\n"
 
+# Labor im Terminal-Stil: Eingaben werden mit ausgegeben (wie in einem echten Terminal),
+# Zufall ist pro Sitzung fest, damit ein erneuter Lauf mit mehr Eingaben gleich ablaeuft.
+def interactive_prelude(seed: int) -> str:
+    return ("import builtins as _lz_b, random as _lz_r; _lz_r.seed(%d); "
+            "input = lambda prompt='', _f=_lz_b.input: (lambda _v: (print(_v), _v)[1])(_f(prompt))\n" % seed)
+
+
 toolchain = {"python": None, "cpp": None}
 toolchain_ready = threading.Event()
 
@@ -197,15 +204,16 @@ def status() -> dict:
 
 # ---------------------------------------------------------------- Ausfuehren
 
-def run_python(code: str, stdin: str, quiet_input: bool) -> dict:
+def run_python(code: str, stdin: str, quiet_input: bool, seed: int | None = None) -> dict:
     with tempfile.TemporaryDirectory(prefix="laufzeit-", ignore_cleanup_errors=True) as tmp:
-        source = QUIET_INPUT_PRELUDE + code if quiet_input else code
+        prelude = interactive_prelude(seed) if seed is not None else QUIET_INPUT_PRELUDE if quiet_input else ""
+        source = prelude + code
         Path(tmp, "main.py").write_text(source, encoding="utf-8")
         env = {k: v for k, v in os.environ.items() if k not in ("FORCE_COLOR", "PY_COLORS")}
         env.update(PYTHON_COLORS="0", NO_COLOR="1")   # keine Farbcodes in Fehlermeldungen
         res = execute([sys.executable, "-I", "-X", "utf8", "main.py"], tmp, stdin, RUN_TIMEOUT, env)
         res["stderr"] = clean_paths(res["stderr"], tmp)
-        if quiet_input:
+        if prelude:
             res["stderr"] = re.sub(
                 r'(File "main\.py", line )(\d+)',
                 lambda m: m.group(1) + str(max(1, int(m.group(2)) - 1)),
@@ -251,7 +259,9 @@ def handle_run(payload: dict) -> dict:
         return {"available": True, "ok": False, "stage": "run", "stderr": "Der Code ist zu lang."}
     toolchain_ready.wait(timeout=90)
     if lang == "python":
-        result = run_python(code, stdin, bool(payload.get("quietInput")))
+        seed = payload.get("interactive")
+        seed = int(seed) if isinstance(seed, int) and not isinstance(seed, bool) else None
+        result = run_python(code, stdin, bool(payload.get("quietInput")), seed)
     elif lang == "cpp":
         if not toolchain["cpp"]:
             return {"available": False, "reason": "Auf diesem PC wurde kein C++-Compiler gefunden."}

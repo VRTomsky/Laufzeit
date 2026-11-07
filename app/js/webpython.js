@@ -34,7 +34,7 @@ export function warmUp() {
 
 export const webPythonVersion = () => version;
 
-export async function runWebPython(code, stdin, quietInput) {
+export async function runWebPython(code, stdin, quietInput, seed = null) {
   if (!worker) spawn();
   try {
     await readyPromise;
@@ -66,6 +66,6 @@ export async function runWebPython(code, stdin, quietInput) {
         tool: version,
       }),
     });
-    worker.postMessage({ id, code, stdin, quietInput });
+    worker.postMessage({ id, code, stdin, quietInput, seed });
   });
 }
