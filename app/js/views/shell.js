@@ -158,7 +158,7 @@ export function renderShell(view) {
   const main = h('main', { class: 'main', id: 'main' });
   const rail = h('header', { class: 'rail' },
     h('div', { class: 'brand-row' },
-      h('a', { class: 'brand', href: '#/pfad', 'aria-label': t('Laufzeit, zum Lernpfad', 'Laufzeit, to the learning path') }, 'laufzeit', h('span', { class: 'brand-cursor' })),
+      h('a', { class: 'brand', href: '#/pfad', 'aria-label': t('Bitweg, zum Lernpfad', 'Bitweg, to the learning path') }, 'bitweg', h('span', { class: 'brand-cursor' })),
       h('div', { class: 'mobile-only', id: 'mobile-stats' }, statRow())),
     h('nav', { class: 'nav', 'aria-label': t('Bereiche', 'Sections') },
       NAV.map(([id, label, ic]) => h('a', { href: `#/${id}`, 'aria-current': id === view ? 'page' : null },
@@ -177,7 +177,7 @@ function paintBadge() {
   const el = document.getElementById('nav-friends-badge');
   if (!el || !CLOUD_ENABLED) return;
   const c = socialCounts();
-  const n = c.messages + c.requests + c.nudges;
+  const n = c.messages + c.requests + c.nudges + (c.groups || 0);
   el.hidden = n === 0;
   el.textContent = n > 9 ? '9+' : String(n);
   el.title = [c.messages && `${c.messages} ungelesen`, c.requests && t(`${c.requests} Anfragen`, `${c.requests} requests`), c.nudges && t(`${c.nudges} Anfeuern`, `${c.nudges} cheers`)].filter(Boolean).join(', ');

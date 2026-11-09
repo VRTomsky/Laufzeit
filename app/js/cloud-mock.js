@@ -23,6 +23,9 @@ function seed() {
     messages: [],
     nudges: [],
     reports: [],
+    groups: [],
+    groupMembers: [],
+    groupMessages: [],
     seq: 1,
     session: null,
   };
@@ -65,7 +68,7 @@ export function createMockBackend() {
       // die Test-Nutzer schicken gleich eine Anfrage bzw. sind schon befreundet
       db.friendships.push({ requester: 'u_mia', addressee: id, status: 'accepted', created_at: day(0) });
       db.friendships.push({ requester: 'u_jonas', addressee: id, status: 'pending', created_at: day(0) });
-      db.messages.push({ id: db.seq++, sender: 'u_mia', recipient: id, body: 'Hey, willkommen bei Laufzeit!', created_at: new Date().toISOString(), read_at: null });
+      db.messages.push({ id: db.seq++, sender: 'u_mia', recipient: id, body: 'Hey, willkommen bei Bitweg!', created_at: new Date().toISOString(), read_at: null });
       db.nudges.push({ id: db.seq++, sender: 'u_mia', recipient: id, kind: 'cheer', streak: null, created_at: new Date().toISOString(), seen_at: null });
       db.session = id;
       save();
@@ -152,5 +155,53 @@ export function createMockBackend() {
     },
     async markNudgesSeen(ids) { db.nudges.forEach(n => { if (ids.includes(n.id)) n.seen_at = new Date().toISOString(); }); save(); },
     live(fn) { live.push(fn); return () => { const i = live.indexOf(fn); if (i >= 0) live.splice(i, 1); }; },
+
+    /* ---------- Gruppen */
+    async groups() {
+      db.groups ||= []; db.groupMembers ||= []; db.groupMessages ||= [];
+      const mine = db.groupMembers.filter(m => m.user_id === uid());
+      return delay(mine.map(m => {
+        const g = db.groups.find(x => x.id === m.group_id);
+        return g && { ...g, last_read_at: m.last_read_at, messages: db.groupMessages.filter(x => x.group_id === g.id).slice().reverse() };
+      }).filter(Boolean));
+    },
+    async groupInfo(gid) { return delay(db.groupMembers.some(m => m.group_id === gid && m.user_id === uid()) ? db.groups.find(g => g.id === gid) || null : null); },
+    async groupMembers(gid) { return delay(db.groupMembers.filter(m => m.group_id === gid)); },
+    async createGroup(name) {
+      const g = { id: `g_${Math.random().toString(36).slice(2, 8)}`, name, owner: uid(), created_at: new Date().toISOString() };
+      db.groups.push(g);
+      db.groupMembers.push({ group_id: g.id, user_id: uid(), added_by: uid(), joined_at: g.created_at, last_read_at: g.created_at });
+      save();
+      return delay(g);
+    },
+    async addGroupMembers(gid, ids) {
+      for (const id of ids) {
+        if (!friends(uid(), id)) throw new Error('new row violates row-level security policy');
+        if (!db.groupMembers.some(m => m.group_id === gid && m.user_id === id)) db.groupMembers.push({ group_id: gid, user_id: id, added_by: uid(), joined_at: new Date().toISOString(), last_read_at: new Date(0).toISOString() });
+      }
+      save();
+      // Test: Mia schreibt in neue Gruppen
+      if (ids.includes('u_mia')) setTimeout(() => { const m = { id: db.seq++, group_id: gid, sender: 'u_mia', body: 'Yeah, Gruppe! Wer macht heute noch eine Lektion?', attachment: null, created_at: new Date().toISOString() }; db.groupMessages.push(m); save(); live.forEach(fn => fn('group_message', m)); }, 1500);
+    },
+    async removeGroupMember(gid, userId) {
+      db.groupMembers = db.groupMembers.filter(m => !(m.group_id === gid && m.user_id === userId));
+      const g = db.groups.find(x => x.id === gid);
+      const rest = db.groupMembers.filter(m => m.group_id === gid);
+      if (!rest.length) db.groups = db.groups.filter(x => x.id !== gid);
+      else if (g && g.owner === userId) g.owner = rest[0].user_id;
+      save();
+    },
+    async renameGroup(gid, name) { const g = db.groups.find(x => x.id === gid); if (g) g.name = name; save(); },
+    async groupMessages(gid) { return delay(db.groupMessages.filter(m => m.group_id === gid)); },
+    async sendGroup(gid, body, attachment = null) {
+      if (!db.groupMembers.some(m => m.group_id === gid && m.user_id === uid())) throw new Error('new row violates row-level security policy');
+      const m = { id: db.seq++, group_id: gid, sender: uid(), body, attachment, created_at: new Date().toISOString() };
+      db.groupMessages.push(m);
+      save();
+      return delay(m);
+    },
+    async uploadGroup(gid, file, name) { const path = `g/${gid}/${uid()}/${Date.now()}-${name}`; files.set(path, URL.createObjectURL(file)); return path; },
+    async markGroupRead(gid) { const m = db.groupMembers.find(x => x.group_id === gid && x.user_id === uid()); if (m) m.last_read_at = new Date().toISOString(); save(); },
+    liveGroups() { return () => {}; },
   };
 }

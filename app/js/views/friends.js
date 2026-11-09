@@ -5,6 +5,8 @@ import { t, locale } from '../i18n.js';
 import { h, toast, confirmDialog, showModal } from '../util.js';
 import { icon, solidIcon, langLogo } from '../icons.js';
 import { bit } from '../mascot.js';
+import { chatBox } from './chatbox.js';
+import { groupsSection } from './groups.js';
 import { store } from '../store.js';
 import { COURSES } from '../content/index.js';
 import { levelInfo, currentStreak } from '../gamification.js';
@@ -195,6 +197,8 @@ export async function renderFriends(main) {
             h('button', { type: 'button', class: 'btn btn-small btn-ghost', onclick: async () => { if (await guard(() => removeFriend(p.id))) repaint(); } }, t('Ablehnen', 'Decline'))))))));
     }
 
+    body.append(groupsSection(data.friends.length > 0));
+
     const friends = data.friends.sort((a, b) => (b.summary?.today ? 1 : 0) - (a.summary?.today ? 1 : 0) || b.xp - a.xp);
     body.append(h('section', { class: 'section' },
       h('h2', {}, t(`Deine Freunde (${friends.length})`, `Your friends (${friends.length})`)),
@@ -225,7 +229,7 @@ export async function renderFriends(main) {
 
   const stop = onLive(kind => {
     if (!document.body.contains(body)) { stop(); return; }
-    if (kind === 'friendship' || kind === 'message') repaint();
+    if (kind === 'friendship' || kind === 'message' || kind === 'group_message' || kind === 'group') repaint();
   });
   paint();
 }
@@ -246,7 +250,7 @@ function reportDialog(p, messageId = null) {
     let release = () => {};
     const dlg = h('dialog', { class: 'confirm' },
       h('h2', {}, t(`${displayName(p)} melden`, `Report ${displayName(p)}`)),
-      h('p', { class: 'muted' }, t('Die Meldung sieht nur der Betreiber von Laufzeit. Bei Beleidigungen oder Belästigung zusätzlich: blockieren und einem Erwachsenen Bescheid sagen.', 'Only the operator of Laufzeit sees the report. For insults or harassment also: block them and tell an adult.')),
+      h('p', { class: 'muted' }, t('Die Meldung sieht nur der Betreiber von Bitweg. Bei Beleidigungen oder Belästigung zusätzlich: blockieren und einem Erwachsenen Bescheid sagen.', 'Only the operator of Bitweg sees the report. For insults or harassment also: block them and tell an adult.')),
       reason,
       h('div', { class: 'row-actions' },
         h('button', { type: 'button', class: 'btn', onclick: () => close(false) }, t('Abbrechen', 'Cancel')),
@@ -362,40 +366,6 @@ export async function renderUser(main, username) {
 
 /* ---------------------------------------------------------------- Nachrichten */
 
-function timeText(iso) {
-  const d = new Date(iso);
-  const today = d.toDateString() === new Date().toDateString();
-  return today ? d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString(locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
-
-/** Bildvorschau im Chat: dunkler Hintergrund, Bild groß, schließen mit X, Esc oder Klick daneben */
-function openLightbox(url, a) {
-  let release = () => {};
-  const img = h('img', { class: 'lightbox-img', src: url, alt: a.name || t('Bild', 'Image') });
-  const close = () => { dlg.close(); release(); dlg.remove(); };
-  const download = async () => {
-    try {
-      const href = await attachmentUrl(a.path, a.name || true);
-      const link = h('a', { href, download: a.name || 'bild', rel: 'noopener' });
-      document.body.append(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      toast(t('Download nicht möglich', 'Download not possible'), germanError(err));
-    }
-  };
-  const kb = Math.max(1, Math.round((a.size || 0) / 1024));
-  const dlg = h('dialog', { class: 'lightbox', 'aria-label': t('Bildvorschau', 'Image preview') },
-    h('div', { class: 'lightbox-bar' },
-      h('span', { class: 'lightbox-name' }, h('b', {}, a.name || t('Bild', 'Image')), h('small', {}, kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`)),
-      h('button', { type: 'button', class: 'lightbox-btn', onclick: download, title: t('Herunterladen', 'Download') }, h('span', { html: icon('file', 20) }), t('Herunterladen', 'Download')),
-      h('button', { type: 'button', class: 'lightbox-btn is-close', onclick: close, 'aria-label': t('Schließen', 'Close'), html: icon('close', 22) })),
-    h('div', { class: 'lightbox-stage' }, img));
-  dlg.addEventListener('click', e => { if (e.target === dlg || e.target.classList.contains('lightbox-stage')) close(); });
-  dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
-  release = showModal(dlg);
-}
-
 export async function renderChat(main, username) {
   if (!CLOUD_ENABLED) { signedOut(main); return; }
   await initCloud();
@@ -415,135 +385,40 @@ export async function renderChat(main, username) {
   wait.remove();
   if (!p) { page.append(h('p', { class: 'muted' }, t('Diese Person gibt es nicht.', 'This person doesn\'t exist.'))); return; }
 
-  const list = h('ol', { class: 'chat-list', 'aria-live': 'polite' });
-  const seen = new Set();
-  const meId = currentUser().id;
-
-  function addMsg(m) {
-    if (seen.has(m.id)) return;
-    seen.add(m.id);
-    const mine = m.sender === meId;
-    list.append(h('li', { class: `msg${mine ? ' is-mine' : ''}${m.attachment ? ' has-file' : ''}` },
-      m.attachment ? attachmentView(m.attachment) : null,
-      m.body ? h('p', {}, m.body) : null,
-      h('small', {}, timeText(m.created_at),
-        mine ? null : h('button', { type: 'button', class: 'msg-report', title: t('Nachricht melden', 'Report message'), onclick: () => reportDialog(p, m.id) }, 'melden'))));
-  }
-  const scroll = () => { list.scrollTop = list.scrollHeight; };
-
-  /** Anhang anzeigen: Bilder direkt, andere Dateien als Download-Kachel */
-  function attachmentView(a) {
-    const isImg = /^image\//.test(a.type || '');
-    if (isImg) {
-      const img = h('img', { class: 'msg-img', alt: a.name || t('Bild', 'Image'), loading: 'lazy' });
-      const link = h('button', { type: 'button', class: 'msg-img-link', title: t('Vorschau öffnen', 'Open preview'), 'aria-label': t(`Bild ${a.name || ''} ansehen`, `View image ${a.name || ''}`) }, img);
-      attachmentUrl(a.path).then(url => {
-        img.src = url;
-        img.addEventListener('load', scroll, { once: true });
-        link.onclick = () => openLightbox(url, a);
-      }).catch(() => { link.replaceWith(h('span', { class: 'msg-file is-missing' }, t('Bild nicht verfügbar', 'Image not available'))); });
-      return link;
-    }
-    const kb = Math.max(1, Math.round((a.size || 0) / 1024));
-    return h('button', {
-      type: 'button', class: 'msg-file',
-      onclick: async () => {
-        try { window.open(await attachmentUrl(a.path, a.name || true), '_blank', 'noopener'); } catch (err) { toast(t('Datei nicht verfügbar', 'File not available'), germanError(err)); }
-      },
-    }, h('span', { html: icon('file', 22) }), h('span', {}, h('b', {}, a.name || t('Datei', 'File')), h('small', {}, `${kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`} · ${t('herunterladen', 'download')}`)));
-  }
-
-  const text = h('textarea', { class: 'text-input chat-input', rows: '1', maxlength: '1000', placeholder: rel === 'friends' ? t(`Nachricht an ${displayName(p)}`, `Message ${displayName(p)}`) : t('Nur unter Freunden möglich', 'Only possible between friends'), disabled: rel !== 'friends', 'aria-label': t('Nachricht', 'Message') });
-  const sendBtn = h('button', { type: 'submit', class: 'btn btn-go', disabled: rel !== 'friends' }, t('Senden', 'Send'));
-  async function send(e) {
-    e?.preventDefault();
-    const body = text.value.trim();
-    if (!body) return;
-    sendBtn.disabled = true;
-    try {
-      const m = await sendMessage(p.id, body);
-      text.value = '';
-      addMsg(m);
-      scroll();
-    } catch (err) {
-      toast(t('Nicht gesendet', 'Not sent'), germanError(err));
-    }
-    sendBtn.disabled = false;
-    text.focus();
-  }
-  text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) send(e); });
-
-  // Bilder und Dateien anhaengen (Bueroklammer, Einfuegen aus der Zwischenablage, Hineinziehen)
-  const fileInput = h('input', { type: 'file', class: 'sr-only', accept: ATTACH_TYPES.join(','), tabindex: '-1' });
-  const clipBtn = h('button', {
-    type: 'button', class: 'icon-btn chat-clip', disabled: rel !== 'friends',
-    title: t('Bild oder Datei anhängen (max. 5 MB)', 'Attach image or file (max. 5 MB)'),
-    'aria-label': t('Bild oder Datei anhängen', 'Attach image or file'),
-    html: icon('clip', 22),
-    onclick: () => {
-      if (!attachmentsAvailable()) { toast(t('Anhänge sind noch nicht eingerichtet', 'Attachments are not set up yet'), t('Der Betreiber muss dafür noch supabase/02-anhaenge.sql ausführen.', 'The operator still has to run supabase/02-anhaenge.sql.')); return; }
-      fileInput.click();
-    },
-  });
-  async function sendFile(file) {
-    if (!file || rel !== 'friends') return;
-    if (file.size > ATTACH_MAX * 3) { toast(t('Zu groß', 'Too large'), t('Höchstens 5 MB pro Datei.', 'At most 5 MB per file.')); return; }
-    clipBtn.disabled = true;
-    sendBtn.disabled = true;
-    const busy = h('li', { class: 'msg is-mine is-busy' }, h('p', {}, t(`Lädt hoch: ${file.name}`, `Uploading: ${file.name}`)));
-    list.append(busy);
-    scroll();
-    try {
-      const m = await sendAttachment(p.id, file, text.value.trim());
-      text.value = '';
-      busy.remove();
-      list.querySelector('.chat-empty')?.remove();
-      addMsg(m);
-      scroll();
-    } catch (err) {
-      busy.remove();
-      toast(t('Nicht gesendet', 'Not sent'), germanError(err));
-    }
-    clipBtn.disabled = false;
-    sendBtn.disabled = false;
-  }
-  fileInput.addEventListener('change', () => { const f = fileInput.files?.[0]; fileInput.value = ''; sendFile(f); });
-  text.addEventListener('paste', e => {
-    const f = [...(e.clipboardData?.files || [])][0];
-    if (f) { e.preventDefault(); sendFile(f); }
+  const friends = rel === 'friends';
+  const box = chatBox({
+    meId: currentUser().id,
+    canWrite: friends,
+    placeholder: t('Nachricht schreiben', 'Write a message'),
+    lockedText: t('Nur unter Freunden möglich', 'Only possible between friends'),
+    send: body => sendMessage(p.id, body),
+    sendFile: (file, body) => sendAttachment(p.id, file, body),
+    onReport: m => reportDialog(p, m.id),
   });
 
   page.append(
     h('header', { class: 'chat-head' },
       h('a', { class: 'icon-btn', href: '#/freunde', 'aria-label': t('Zurück zu den Freunden', 'Back to friends'), html: icon('back', 22) }),
       h('a', { class: 'search-person', href: `#/nutzer/${p.username}` }, personAvatar(p, 44), h('span', {}, h('b', {}, displayName(p)), h('small', {}, `@${p.username} · ${activity(p)}`))),
-      rel === 'friends' ? h('button', { type: 'button', class: 'icon-btn', title: t('Anfeuern', 'Cheer on'), 'aria-label': t('Anfeuern', 'Cheer on'), onclick: () => guard(() => cheer(p.id), t(`${displayName(p)} angefeuert`, `Cheered on ${displayName(p)}`)), html: solidIcon('bolt', 22) }) : null),
-    list,
-    h('form', {
-      class: 'chat-form',
-      onsubmit: send,
-      ondragover: e => { if (rel === 'friends') { e.preventDefault(); e.currentTarget.classList.add('is-drop'); } },
-      ondragleave: e => e.currentTarget.classList.remove('is-drop'),
-      ondrop: e => { e.preventDefault(); e.currentTarget.classList.remove('is-drop'); sendFile(e.dataTransfer?.files?.[0]); },
-    }, clipBtn, fileInput, text, sendBtn),
+      friends ? h('button', { type: 'button', class: 'icon-btn', title: t('Anfeuern', 'Cheer on'), 'aria-label': t('Anfeuern', 'Cheer on'), onclick: () => guard(() => cheer(p.id), t(`${displayName(p)} angefeuert`, `Cheered on ${displayName(p)}`)), html: solidIcon('bolt', 22) }) : null),
+    box.list,
+    box.form,
     h('p', { class: 'muted social-note' }, t('Nachrichten sehen nur ihr beide. Sei nett. Wenn dich jemand belästigt: melden, blockieren und einem Erwachsenen Bescheid sagen.', 'Only you two can see the messages. Be nice. If someone harasses you: report, block and tell an adult.')));
 
   try {
-    (await loadThread(p.id)).forEach(addMsg);
-    if (!list.children.length) list.append(h('li', { class: 'chat-empty muted' }, rel === 'friends' ? t('Noch keine Nachrichten. Schreib als Erstes!', 'No messages yet. Write first!') : t('Ihr müsst befreundet sein, um euch zu schreiben.', 'You need to be friends to message each other.')));
-    scroll();
+    (await loadThread(p.id)).forEach(m => box.add(m));
+    box.empty(friends ? t('Noch keine Nachrichten. Schreib als Erstes!', 'No messages yet. Write first!') : t('Ihr müsst befreundet sein, um euch zu schreiben.', 'You need to be friends to message each other.'));
+    box.toBottom();
     markThreadRead(p.id).catch(() => {});
   } catch (err) {
-    list.append(h('li', { class: 'muted' }, germanError(err)));
+    box.error(germanError(err));
   }
   const stop = onLive((kind, row) => {
-    if (!document.body.contains(list)) { stop(); return; }
+    if (!document.body.contains(box.list)) { stop(); return; }
     if (kind === 'message' && row.sender === p.id) {
-      list.querySelector('.chat-empty')?.remove();
-      addMsg(row);
-      scroll();
+      box.add(row, { live: true });
       markThreadRead(p.id).catch(() => {});
     }
   });
-  text.focus();
+  box.focus();
 }

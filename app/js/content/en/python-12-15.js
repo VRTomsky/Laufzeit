@@ -158,7 +158,7 @@ export const pythonUnits12to15 = [
         goal: 'Check your own code automatically.',
         steps: [
           concept('Code that checks code',
-            'Pros write **tests**: small programs that check whether functions return the right thing. If you change something later, the tests immediately show whether everything still works.\n\nThe simplest tool is `assert condition, "message"`: if the condition is false, the program stops with an `AssertionError`. Bigger projects use **pytest**, which works exactly the same way.\n\nBy the way: this is exactly how Laufzeit checks your tasks.',
+            'Pros write **tests**: small programs that check whether functions return the right thing. If you change something later, the tests immediately show whether everything still works.\n\nThe simplest tool is `assert condition, "message"`: if the condition is false, the program stops with an `AssertionError`. Bigger projects use **pytest**, which works exactly the same way.\n\nBy the way: this is exactly how Bitweg checks your tasks.',
             { code: 'def double(x):\n    return x * 2\n\ndef test_double():\n    assert double(2) == 4\n    assert double(0) == 0\n    assert double(-3) == -6, "negative numbers"\n\ntest_double()\nprint("All tests passed")', console: 'All tests passed' }),
           mc('What happens with `assert 1 + 1 == 3, "maths broken"`?', ['AssertionError: maths broken', 'False appears', 'Nothing', 'SyntaxError'], 0),
           mc('Which test cases matter most for a function `is_adult(age)`?', ['17, 18 and 19, right at the limit', '1, 50 and 100', 'Only 18', 'Only very big numbers'], 0, 'Bugs almost always happen at limits: >= instead of >.'),

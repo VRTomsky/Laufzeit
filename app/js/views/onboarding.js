@@ -217,7 +217,7 @@ const STEPS = {
     app.append(h('div', { class: 'onb onb-welcome' }, langToggle,
       h('main', { class: 'onb-hero' },
         h('div', { class: 'onb-hero-bit', html: bit({ size: 200, mood: 'wave' }) }),
-        h('p', { class: 'onb-brand' }, 'laufzeit'),
+        h('p', { class: 'onb-brand' }, 'bitweg'),
         h('h1', {}, t(`Programmieren lernen. Kostenlos, ${IS_WEB ? 'im Browser' : 'lokal'}, Schritt für Schritt.`, `Learn to code. Free, ${IS_WEB ? 'in your browser' : 'on your PC'}, step by step.`)),
         h('p', { class: 'muted' }, t('Hi, ich bin Bit. Bevor es losgeht, stelle ich dir ein paar kurze Fragen. Dann passt dein Kurs genau zu dir.', 'Hi, I\'m Bit. Before we start, I\'ll ask you a few quick questions. Then your course fits you perfectly.')),
         h('div', { class: 'onb-hero-actions' },
@@ -350,8 +350,8 @@ const STEPS = {
         h('p', {}, h('b', {}, t('Bit hat nachgesehen:', 'Bit checked:'))),
         h('ul', {}, rows.map(([name, v]) => h('li', { class: v ? 'is-ok' : 'is-bad' }, h('span', { html: icon(v ? 'check' : 'cross', 18) }), t(`${name}: ${v || 'nicht gefunden'}`, `${name}: ${v || 'not found'}`)))),
         h('p', { class: 'muted' }, allOk
-          ? t('Damit laufen alle Übungen echt auf deinem PC. Wie du auch außerhalb von Laufzeit programmierst, steht in der Werkstatt.', 'All exercises really run on your PC. How to program outside Laufzeit is explained in the Workshop.')
-          : t('Laufzeit funktioniert trotzdem. Was fehlt und wie du es einrichtest, steht in der Werkstatt.', 'Laufzeit still works. What is missing and how to set it up is in the Workshop.')));
+          ? t('Damit laufen alle Übungen echt auf deinem PC. Wie du auch außerhalb von Bitweg programmierst, steht in der Werkstatt.', 'All exercises really run on your PC. How to program outside Bitweg is explained in the Workshop.')
+          : t('Bitweg funktioniert trotzdem. Was fehlt und wie du es einrichtest, steht in der Werkstatt.', 'Bitweg still works. What is missing and how to set it up is in the Workshop.')));
     };
     getStatus(true).then(show);
   },

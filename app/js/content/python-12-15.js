@@ -158,7 +158,7 @@ export const pythonUnits12to15 = [
         goal: 'Eigenen Code automatisch prüfen.',
         steps: [
           concept('Code, der Code prüft',
-            'Profis schreiben **Tests**: kleine Programme, die prüfen, ob Funktionen das Richtige liefern. Ändert man später etwas, zeigen die Tests sofort, ob noch alles funktioniert.\n\nDas einfachste Werkzeug ist `assert bedingung, "Meldung"`: Ist die Bedingung falsch, bricht das Programm mit einem `AssertionError` ab. Größere Projekte nutzen **pytest**, das genau so funktioniert.\n\nÜbrigens: Genau so prüft Laufzeit deine Aufgaben.',
+            'Profis schreiben **Tests**: kleine Programme, die prüfen, ob Funktionen das Richtige liefern. Ändert man später etwas, zeigen die Tests sofort, ob noch alles funktioniert.\n\nDas einfachste Werkzeug ist `assert bedingung, "Meldung"`: Ist die Bedingung falsch, bricht das Programm mit einem `AssertionError` ab. Größere Projekte nutzen **pytest**, das genau so funktioniert.\n\nÜbrigens: Genau so prüft Bitweg deine Aufgaben.',
             { code: 'def doppelt(x):\n    return x * 2\n\ndef test_doppelt():\n    assert doppelt(2) == 4\n    assert doppelt(0) == 0\n    assert doppelt(-3) == -6, "negative Zahlen"\n\ntest_doppelt()\nprint("Alle Tests bestanden")', console: 'Alle Tests bestanden' }),
           mc('Was passiert bei `assert 1 + 1 == 3, "Mathe kaputt"`?', ['AssertionError: Mathe kaputt', 'Es erscheint False', 'Nichts', 'SyntaxError'], 0),
           mc('Welche Testfälle sind für eine Funktion `ist_volljaehrig(alter)` am wichtigsten?', ['17, 18 und 19, also genau an der Grenze', '1, 50 und 100', 'Nur 18', 'Nur sehr große Zahlen'], 0, 'Fehler passieren fast immer an Grenzen: >= statt >.'),

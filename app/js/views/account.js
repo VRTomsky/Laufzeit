@@ -21,7 +21,7 @@ function frame(title, sub, body, mood = 'wave') {
   app.innerHTML = '';
   app.append(h('div', { class: 'auth-page' },
     h('div', { class: 'auth-top' },
-      h('a', { class: 'brand auth-brand', href: store.state.onboarded ? '#/pfad' : '#/start' }, 'laufzeit', h('span', { class: 'brand-cursor' })),
+      h('a', { class: 'brand auth-brand', href: store.state.onboarded ? '#/pfad' : '#/start' }, 'bitweg', h('span', { class: 'brand-cursor' })),
       uiLangButton()),
     h('main', { class: 'auth-card' },
       h('div', { class: 'auth-bit', html: bit({ size: 96, mood }) }),
@@ -46,7 +46,7 @@ function done(msg) {
 
 function notConfigured() {
   frame(t('Konten sind noch nicht eingerichtet', 'Accounts are not set up yet'),
-    t('Für Konten, Freunde und Nachrichten braucht Laufzeit eine Datenbank. Die ist für diese Version noch nicht verbunden. Du kannst trotzdem ganz normal lernen, dein Fortschritt bleibt in diesem Browser.', 'Laufzeit needs a database for accounts, friends and messages. It isn\'t connected for this version yet. You can still learn as usual, your progress stays in this browser.'),
+    t('Für Konten, Freunde und Nachrichten braucht Bitweg eine Datenbank. Die ist für diese Version noch nicht verbunden. Du kannst trotzdem ganz normal lernen, dein Fortschritt bleibt in diesem Browser.', 'Bitweg needs a database for accounts, friends and messages. It isn\'t connected for this version yet. You can still learn as usual, your progress stays in this browser.'),
     h('div', { class: 'auth-actions' }, h('a', { class: 'btn btn-go', href: store.state.onboarded ? '#/pfad' : '#/start' }, t('Weiter lernen', 'Keep learning'))), 'think');
 }
 

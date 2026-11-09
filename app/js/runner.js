@@ -12,7 +12,7 @@ let statusCache = null;
 import { IS_WEB } from './env.js';
 export { IS_WEB };
 
-export const CPP_WEB_REASON = t('In der Online-Version kann Laufzeit kein C++ übersetzen. Die Aufgaben werden über Regeln geprüft. Zum echten Kompilieren lade Laufzeit auf deinen PC (Werkstatt, „Laufzeit herunterladen“).', 'The online version of Laufzeit can\'t compile C++. The tasks are checked by their rules. To really compile, download Laufzeit to your PC (Workshop, “Download Laufzeit”).');
+export const CPP_WEB_REASON = t('In der Online-Version kann Bitweg kein C++ übersetzen. Die Aufgaben werden über Regeln geprüft. Zum echten Kompilieren lade Bitweg auf deinen PC (Werkstatt, „Bitweg herunterladen“).', 'The online version of Bitweg can\'t compile C++. The tasks are checked by their rules. To really compile, download Bitweg to your PC (Workshop, “Download Bitweg”).');
 
 export async function getStatus(force = false) {
   if (IS_WEB) {

@@ -1,6 +1,6 @@
 // Konto, Cloud-Speicherung und alles Soziale (Freunde, Nachrichten, Anfeuern).
 // Technik: Supabase. Die Datenbank prueft selbst, wer was darf (supabase/schema.sql).
-// Ohne eingetragene Zugangsdaten (config.js) bleibt Laufzeit wie bisher rein lokal.
+// Ohne eingetragene Zugangsdaten (config.js) bleibt Bitweg wie bisher rein lokal.
 
 import { t, locale } from './i18n.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, WEB_URL } from './config.js';
@@ -26,7 +26,7 @@ let me = null;            // eigenes Profil aus der Datenbank
 let ready = null;
 const listeners = new Set();
 const liveListeners = new Set();
-let counts = { messages: 0, requests: 0, nudges: 0 };
+let counts = { messages: 0, requests: 0, nudges: 0, groups: 0 };
 
 export const currentUser = () => user;
 export const myProfile = () => me;
@@ -157,6 +157,48 @@ async function supabaseBackend() {
     async sendNudge(otherId, kind, streak = null) { must(await sb.from('nudges').insert({ sender: uid(), recipient: otherId, kind, streak })); },
     async markNudgesSeen(ids) { if (ids.length) must(await sb.from('nudges').update({ seen_at: new Date().toISOString() }).in('id', ids)); },
 
+    /* ---------- Gruppen (supabase/03-gruppen.sql) */
+    async groups() {
+      const mem = must(await sb.from('group_members').select('group_id,last_read_at').eq('user_id', uid()));
+      if (!mem.length) return [];
+      const ids = mem.map(m => m.group_id);
+      const [gs, last] = await Promise.all([
+        sb.from('groups').select('id,name,owner,created_at').in('id', ids),
+        sb.from('group_messages').select('id,group_id,sender,body,attachment,created_at').in('group_id', ids).order('created_at', { ascending: false }).limit(400),
+      ]);
+      const msgs = must(last);
+      return must(gs).map(g => ({ ...g, last_read_at: mem.find(m => m.group_id === g.id)?.last_read_at, messages: msgs.filter(m => m.group_id === g.id) }));
+    },
+    async groupInfo(gid) { return must(await sb.from('groups').select('id,name,owner,created_at').eq('id', gid).maybeSingle()); },
+    async groupMembers(gid) { return must(await sb.from('group_members').select('user_id,joined_at,added_by').eq('group_id', gid)); },
+    async createGroup(name) { return must(await sb.from('groups').insert({ name, owner: uid() }).select('id,name,owner,created_at').single()); },
+    async addGroupMembers(gid, ids) { if (ids.length) must(await sb.from('group_members').insert(ids.map(user_id => ({ group_id: gid, user_id, added_by: uid() })))); },
+    async removeGroupMember(gid, userId) { must(await sb.from('group_members').delete().eq('group_id', gid).eq('user_id', userId)); },
+    async renameGroup(gid, name) { must(await sb.from('groups').update({ name }).eq('id', gid)); },
+    async groupMessages(gid, limit = 200) {
+      const rows = must(await sb.from('group_messages').select('id,group_id,sender,body,attachment,created_at').eq('group_id', gid).order('created_at', { ascending: false }).limit(limit));
+      return rows.reverse();
+    },
+    async sendGroup(gid, body, attachment = null) {
+      const row = { group_id: gid, sender: uid(), body };
+      if (attachment) row.attachment = attachment;
+      return must(await sb.from('group_messages').insert(row).select('id,group_id,sender,body,attachment,created_at').single());
+    },
+    async uploadGroup(gid, file, name) {
+      const rand = Math.random().toString(36).slice(2, 10);
+      const path = `g/${gid}/${uid()}/${Date.now()}-${rand}-${name}`;
+      must(await sb.storage.from('chat').upload(path, file, { contentType: file.type, upsert: false }));
+      return path;
+    },
+    async markGroupRead(gid) { must(await sb.from('group_members').update({ last_read_at: new Date().toISOString() }).eq('group_id', gid).eq('user_id', uid())); },
+    liveGroups(onEvent) {
+      const ch = sb.channel(`bitweg-groups-${uid()}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages' }, p => onEvent('group_message', p.new))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, p => onEvent('group', p.new || p.old))
+        .subscribe();
+      return () => sb.removeChannel(ch);
+    },
+
     live(onEvent) {
       const ch = sb.channel(`laufzeit-${uid()}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient=eq.${uid()}` }, p => onEvent('message', p.new))
@@ -273,7 +315,7 @@ export async function pushNow() {
       me = { ...me, ...fields };
     }
   } catch (err) {
-    console.warn('Laufzeit: Cloud-Speichern fehlgeschlagen', err);
+    console.warn('Bitweg: Cloud-Speichern fehlgeschlagen', err);
   } finally {
     pushing = false;
   }
@@ -357,13 +399,14 @@ let replacedView = false;
 /* ================================================================ Zaehler und Live */
 
 export async function refreshCounts() {
-  if (!user) { counts = { messages: 0, requests: 0, nudges: 0 }; emit(); return counts; }
+  if (!user) { counts = { messages: 0, requests: 0, nudges: 0, groups: 0 }; emit(); return counts; }
   try {
-    const [unread, fr, nudges] = await Promise.all([api.unread(), api.friendships(), api.nudgesUnseen()]);
+    const [unread, fr, nudges, groups] = await Promise.all([api.unread(), api.friendships(), api.nudgesUnseen(), safeGroups()]);
     counts = {
       messages: unread.length,
       requests: fr.filter(f => f.status === 'pending' && f.addressee === user.id).length,
       nudges: nudges.length,
+      groups: groups.reduce((n, g) => n + groupUnread(g), 0),
     };
   } catch {
     // offline: alte Zahlen behalten
@@ -373,13 +416,20 @@ export async function refreshCounts() {
 }
 
 let stopLive = null;
+let stopGroupLive = null;
 function startLive() {
   stopLive?.();
-  stopLive = api.live((kind, row) => {
+  stopGroupLive?.();
+  const handler = (kind, row) => {
     liveListeners.forEach(l => l(kind, row));
     if (kind === 'nudge') showNudgeToasts();
     refreshCounts();
-  });
+  };
+  stopLive = api.live(handler);
+  // Gruppen in eigenem Kanal: fehlen die Tabellen noch, bleibt der normale Chat davon unberuehrt
+  if (groupsReady && api.liveGroups) {
+    try { stopGroupLive = api.liveGroups(handler); } catch { stopGroupLive = null; }
+  }
 }
 
 const nudgeText = (n, who) => (n.kind === 'streak'
@@ -414,7 +464,7 @@ export function initCloud() {
     try {
       api = MOCK ? (await import('./cloud-mock.js')).createMockBackend() : await supabaseBackend();
     } catch (err) {
-      console.warn('Laufzeit: Konto-Dienst nicht erreichbar', err);
+      console.warn('Bitweg: Konto-Dienst nicht erreichbar', err);
       api = null;
       return null;
     }
@@ -677,3 +727,76 @@ export async function unseenNudges() {
   return list.map(n => ({ ...n, from: byId[n.sender] })).filter(n => n.from);
 }
 export async function markNudgesSeen(ids) { await (await need()).markNudgesSeen(ids); refreshCounts(); }
+
+/* ================================================================ Gruppen */
+
+let groupsReady = true;
+export const groupsAvailable = () => groupsReady;
+const missingTable = err => /group|relation .* does not exist|PGRST20[05]|42P01|schema cache/i.test(String(err?.message || err?.code || err));
+
+/** Eigene Gruppen; fehlen die Tabellen (03-gruppen.sql noch nicht ausgefuehrt), leere Liste */
+async function safeGroups() {
+  if (!groupsReady) return [];
+  try {
+    return await api.groups();
+  } catch (err) {
+    if (missingTable(err)) { groupsReady = false; return []; }
+    throw err;
+  }
+}
+
+/** Ungelesene Nachrichten einer Gruppe (von anderen, nach dem letzten Lesen) */
+export function groupUnread(g) {
+  const since = Date.parse(g.last_read_at || 0);
+  return (g.messages || []).filter(m => m.sender !== user?.id && Date.parse(m.created_at) > since).length;
+}
+
+export async function loadGroups() {
+  await need();
+  const list = await safeGroups();
+  return list.sort((a, b) => Date.parse(b.messages?.[0]?.created_at || b.created_at) - Date.parse(a.messages?.[0]?.created_at || a.created_at));
+}
+
+export async function createGroup(name, memberIds) {
+  const a = await need();
+  const clean = name.trim().slice(0, 40);
+  if (!clean) throw new Error(t('Gib der Gruppe einen Namen.', 'Give the group a name.'));
+  const g = await a.createGroup(clean);
+  if (memberIds.length) await a.addGroupMembers(g.id, memberIds);
+  refreshCounts();
+  return g;
+}
+
+export async function groupDetails(gid) {
+  const a = await need();
+  const [info, members] = await Promise.all([a.groupInfo(gid), a.groupMembers(gid)]);
+  if (!info) return null;
+  const people = await a.profilesByIds(members.map(m => m.user_id));
+  const byId = Object.fromEntries(people.map(p => [p.id, p]));
+  return { ...info, members: members.map(m => ({ ...m, profile: byId[m.user_id] })).filter(m => m.profile) };
+}
+
+export async function addGroupMembers(gid, ids) { await (await need()).addGroupMembers(gid, ids); }
+export async function removeGroupMember(gid, userId) { await (await need()).removeGroupMember(gid, userId); refreshCounts(); }
+export async function leaveGroup(gid) { await (await need()).removeGroupMember(gid, user.id); refreshCounts(); }
+export async function renameGroup(gid, name) {
+  const clean = name.trim().slice(0, 40);
+  if (!clean) throw new Error(t('Gib der Gruppe einen Namen.', 'Give the group a name.'));
+  await (await need()).renameGroup(gid, clean);
+}
+export const loadGroupThread = async gid => (await need()).groupMessages(gid);
+export async function sendGroupMessage(gid, body, attachment = null) {
+  const text = body.trim().slice(0, 1000);
+  if (!text && !attachment) throw new Error(t('Leere Nachricht.', 'Empty message.'));
+  return (await need()).sendGroup(gid, text, attachment);
+}
+export async function sendGroupAttachment(gid, file, body = '') {
+  if (!ATTACH_TYPES.includes(file.type)) throw new Error(t('Dieser Dateityp geht nicht. Erlaubt: Bilder, PDF, Text und ZIP.', 'This file type is not allowed. Allowed: images, PDF, text and ZIP.'));
+  const ready = await shrinkImage(file);
+  if (ready.size > ATTACH_MAX) throw new Error(t('Die Datei ist größer als 5 MB.', 'The file is larger than 5 MB.'));
+  const a = await need();
+  const name = safeName(ready.name);
+  const path = await a.uploadGroup(gid, ready, name);
+  return sendGroupMessage(gid, body, { path, name: (ready.name || name).slice(0, 120), type: ready.type, size: ready.size });
+}
+export async function markGroupRead(gid) { await (await need()).markGroupRead(gid); refreshCounts(); }

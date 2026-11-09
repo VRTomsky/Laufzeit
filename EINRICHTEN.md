@@ -1,6 +1,6 @@
 # Konten einrichten (einmalig, ca. 10 Minuten)
 
-Damit Registrieren, Freunde und Nachrichten funktionieren, braucht Laufzeit eine Datenbank. Dafür nutzen wir **Supabase** (kostenlos für kleine Projekte).
+Damit Registrieren, Freunde und Nachrichten funktionieren, braucht Bitweg eine Datenbank. Dafür nutzen wir **Supabase** (kostenlos für kleine Projekte).
 
 ## 1. Supabase-Konto und Projekt
 
@@ -8,7 +8,7 @@ Damit Registrieren, Freunde und Nachrichten funktionieren, braucht Laufzeit eine
 2. **Continue with GitHub** (mit deinem GitHub-Konto VRTomsky).
 3. **New project**:
    - Name: `laufzeit`
-   - Database Password: auf **Generate a password** klicken. Das Passwort brauchst du für Laufzeit nicht, gib es niemandem.
+   - Database Password: auf **Generate a password** klicken. Das Passwort brauchst du für Bitweg nicht, gib es niemandem.
    - Region: **Central EU (Frankfurt)**
    - Plan: **Free**
 4. **Create new project**, dann 1 bis 2 Minuten warten.
@@ -48,6 +48,16 @@ Damit Registrieren, Freunde und Nachrichten funktionieren, braucht Laufzeit eine
 1. **SQL Editor**, **New query**.
 2. Inhalt von `supabase/02-anhaenge.sql` einfügen, **Run**.
 3. Fertig. Der private Speicher „chat“ wird dabei automatisch angelegt (max. 5 MB pro Datei, nur Bilder, PDF, Text, ZIP). Dateien sehen nur Absender und Empfänger.
+
+## 6. Gruppenchats (Erweiterung)
+
+Erst nach Schritt 5 ausführen, die Gruppen nutzen denselben Speicher.
+
+1. **SQL Editor**, **New query**.
+2. Inhalt von `supabase/03-gruppen.sql` einfügen, **Run**.
+3. Fertig. Unter **Freunde** erscheint oben „Gruppen“ mit dem Knopf „Neue Gruppe“. Regeln: nur eigene Freunde hinzufügen, höchstens 30 Mitglieder, lesen und schreiben nur Mitglieder. Wer eine Gruppe gründet, kann sie umbenennen und Mitglieder entfernen.
+
+Solange 03 nicht ausgeführt ist, zeigt die App statt der Gruppen einen Hinweis. Der normale Chat läuft trotzdem.
 
 ## Danach: Admin-Aufgaben
 

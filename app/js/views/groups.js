@@ -1,0 +1,227 @@
+// Gruppenchats: Liste auf der Freunde-Seite, Gruppe anlegen, Gruppenchat, Mitglieder verwalten
+
+import { t } from '../i18n.js';
+import { h, toast, confirmDialog, showModal } from '../util.js';
+import { icon } from '../icons.js';
+import { bit } from '../mascot.js';
+import { chatBox, timeText } from './chatbox.js';
+import { personAvatar } from './friends.js';
+import {
+  CLOUD_ENABLED, initCloud, currentUser, germanError, loadFriends, onLive,
+  groupsAvailable, loadGroups, groupUnread, createGroup, groupDetails, addGroupMembers,
+  removeGroupMember, leaveGroup, renameGroup, loadGroupThread, sendGroupMessage, sendGroupAttachment, markGroupRead,
+} from '../cloud.js';
+
+const displayName = p => p?.name || `@${p?.username}`;
+
+/** Bis zu drei Profilbilder uebereinander als Gruppenbild */
+function groupAvatar(profiles, size = 48) {
+  const shown = profiles.slice(0, 3);
+  return h('span', { class: 'group-av', style: { width: `${size}px`, height: `${size}px` } },
+    shown.length ? shown.map((p, i) => h('span', { class: `group-av-${i}` }, personAvatar(p, Math.round(size * 0.62)))) : h('span', { html: bit({ size: Math.round(size * 0.7) }) }));
+}
+
+const NOT_READY = () => t('Gruppenchats sind noch nicht eingerichtet. Der Betreiber muss dafür supabase/03-gruppen.sql ausführen.', 'Group chats are not set up yet. The operator has to run supabase/03-gruppen.sql.');
+
+/* ---------------------------------------------------------------- Neue Gruppe */
+
+function pickFriends(friends, preselected = []) {
+  const chosen = new Set(preselected);
+  const list = h('ul', { class: 'pick-list' }, friends.map(p => {
+    const box = h('input', { type: 'checkbox', checked: chosen.has(p.id) ? true : null });
+    box.addEventListener('change', () => { if (box.checked) chosen.add(p.id); else chosen.delete(p.id); });
+    return h('li', {}, h('label', { class: 'pick-row' }, box, personAvatar(p, 36), h('span', {}, h('b', {}, displayName(p)), h('small', {}, `@${p.username}`))));
+  }));
+  return { list, chosen };
+}
+
+export async function openNewGroupDialog(onCreated) {
+  let friends = [];
+  try { friends = (await loadFriends()).friends; } catch (err) { toast(t('Hat nicht geklappt', 'That didn\'t work'), germanError(err)); return; }
+  if (!friends.length) { toast(t('Erst Freunde hinzufügen', 'Add friends first'), t('In eine Gruppe kannst du nur Freunde einladen.', 'You can only invite friends to a group.')); return; }
+  const name = h('input', { class: 'text-input', maxlength: '40', placeholder: t('z. B. Python-Crew', 'e.g. Python crew') });
+  const pick = pickFriends(friends);
+  const err = h('p', { class: 'auth-error', hidden: true });
+  let release = () => {};
+  const create = h('button', { type: 'button', class: 'btn btn-go' }, t('Gruppe erstellen', 'Create group'));
+  const dlg = h('dialog', { class: 'confirm group-dialog' },
+    h('h2', {}, t('Neue Gruppe', 'New group')),
+    h('label', { class: 'field' }, h('span', {}, t('Name der Gruppe', 'Group name')), name),
+    h('div', { class: 'field' }, h('span', {}, t('Freunde einladen', 'Invite friends')), pick.list),
+    err,
+    h('div', { class: 'row-actions' }, h('button', { type: 'button', class: 'btn', onclick: () => close() }, t('Abbrechen', 'Cancel')), create));
+  function close() { dlg.close(); release(); dlg.remove(); }
+  create.onclick = async () => {
+    err.hidden = true;
+    if (!name.value.trim()) { err.hidden = false; err.textContent = t('Gib der Gruppe einen Namen.', 'Give the group a name.'); name.focus(); return; }
+    if (!pick.chosen.size) { err.hidden = false; err.textContent = t('Wähl mindestens einen Freund aus.', 'Pick at least one friend.'); return; }
+    create.disabled = true;
+    try {
+      const g = await createGroup(name.value, [...pick.chosen]);
+      close();
+      onCreated?.(g);
+    } catch (e) {
+      create.disabled = false;
+      err.hidden = false;
+      err.textContent = germanError(e);
+    }
+  };
+  dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  release = showModal(dlg);
+  name.focus();
+}
+
+/* ---------------------------------------------------------------- Liste auf der Freunde-Seite */
+
+export function groupsSection(hasFriends) {
+  const list = h('ul', { class: 'group-list' }, h('li', { class: 'muted' }, t('Lädt ...', 'Loading ...')));
+  const newBtn = h('button', { type: 'button', class: 'btn btn-small btn-sky', onclick: () => openNewGroupDialog(g => { location.hash = `#/gruppe/${g.id}`; }) },
+    h('span', { html: icon('chat', 16) }), t('Neue Gruppe', 'New group'));
+  const sec = h('section', { class: 'section' },
+    h('div', { class: 'section-head' }, h('h2', {}, t('Gruppen', 'Groups')), hasFriends ? newBtn : null),
+    list);
+  (async () => {
+    let groups = [];
+    try { groups = await loadGroups(); } catch (err) { list.replaceChildren(h('li', { class: 'muted' }, germanError(err))); return; }
+    list.innerHTML = '';
+    if (!groupsAvailable()) { list.append(h('li', { class: 'muted' }, NOT_READY())); newBtn.disabled = true; return; }
+    if (!groups.length) {
+      list.append(h('li', { class: 'muted' }, hasFriends
+        ? t('Noch keine Gruppe. Mach eine für dich und deine Kollegen auf, dann könnt ihr zusammen schreiben und Bilder teilen.', 'No group yet. Start one for you and your friends, then you can chat and share images together.')
+        : t('Sobald du Freunde hast, kannst du Gruppen mit ihnen machen.', 'As soon as you have friends, you can make groups with them.')));
+      return;
+    }
+    for (const g of groups) {
+      const last = g.messages?.[0];
+      const unread = groupUnread(g);
+      const preview = last ? (last.body || (last.attachment ? (/^image\//.test(last.attachment.type) ? t('Bild', 'Image') : last.attachment.name) : '')) : t('Noch keine Nachrichten', 'No messages yet');
+      list.append(h('li', {},
+        h('a', { class: `group-row${unread ? ' is-unread' : ''}`, href: `#/gruppe/${g.id}` },
+          h('span', { class: 'group-icon', html: icon('chat', 22) }),
+          h('span', { class: 'group-text' }, h('b', {}, g.name), h('small', {}, preview)),
+          h('span', { class: 'group-meta' }, last ? h('small', {}, timeText(last.created_at)) : null, unread ? h('i', { class: 'badge-dot is-inline' }, unread > 9 ? '9+' : unread) : null))));
+    }
+  })();
+  return sec;
+}
+
+/* ---------------------------------------------------------------- Mitglieder verwalten */
+
+async function openMembersDialog(info, onChange) {
+  const me = currentUser().id;
+  const isOwner = info.owner === me;
+  let friends = [];
+  try { friends = (await loadFriends()).friends; } catch { friends = []; }
+  const inGroup = new Set(info.members.map(m => m.user_id));
+  const addable = friends.filter(f => !inGroup.has(f.id));
+  let release = () => {};
+  const close = () => { dlg.close(); release(); dlg.remove(); };
+
+  const nameIn = h('input', { class: 'text-input', maxlength: '40', value: info.name });
+  const memberList = h('ul', { class: 'pick-list' }, info.members.map(m => h('li', {},
+    h('span', { class: 'pick-row' }, personAvatar(m.profile, 36),
+      h('span', {}, h('b', {}, displayName(m.profile), m.user_id === info.owner ? h('em', { class: 'owner-tag' }, t('Admin', 'Admin')) : null), h('small', {}, `@${m.profile.username}`)),
+      isOwner && m.user_id !== me ? h('button', {
+        type: 'button', class: 'btn btn-small btn-ghost',
+        onclick: async () => {
+          if (!(await confirmDialog({ title: t(`${displayName(m.profile)} entfernen?`, `Remove ${displayName(m.profile)}?`), text: t('Die Person sieht die Gruppe danach nicht mehr.', 'They won\'t see the group any more.'), ok: t('Entfernen', 'Remove'), danger: true }))) return;
+          try { await removeGroupMember(info.id, m.user_id); close(); onChange(); } catch (e) { toast(t('Hat nicht geklappt', 'That didn\'t work'), germanError(e)); }
+        },
+      }, t('Entfernen', 'Remove')) : null))));
+
+  const pick = pickFriends(addable);
+  const addBtn = h('button', {
+    type: 'button', class: 'btn btn-small btn-sky',
+    onclick: async () => {
+      if (!pick.chosen.size) return;
+      addBtn.disabled = true;
+      try { await addGroupMembers(info.id, [...pick.chosen]); toast(t('Hinzugefügt', 'Added')); close(); onChange(); } catch (e) { addBtn.disabled = false; toast(t('Hat nicht geklappt', 'That didn\'t work'), germanError(e)); }
+    },
+  }, t('Hinzufügen', 'Add'));
+
+  const dlg = h('dialog', { class: 'confirm group-dialog' },
+    h('h2', {}, t('Gruppe', 'Group')),
+    isOwner ? h('div', { class: 'field' }, h('span', {}, t('Name', 'Name')),
+      h('div', { class: 'row-inline' }, nameIn, h('button', {
+        type: 'button', class: 'btn btn-small',
+        onclick: async () => { try { await renameGroup(info.id, nameIn.value); toast(t('Umbenannt', 'Renamed')); close(); onChange(); } catch (e) { toast(t('Hat nicht geklappt', 'That didn\'t work'), germanError(e)); } },
+      }, t('Speichern', 'Save')))) : null,
+    h('div', { class: 'field' }, h('span', {}, t(`Mitglieder (${info.members.length})`, `Members (${info.members.length})`)), memberList),
+    addable.length ? h('div', { class: 'field' }, h('span', {}, t('Freunde hinzufügen', 'Add friends')), pick.list, h('div', { class: 'row-actions' }, addBtn)) : null,
+    h('div', { class: 'row-actions' },
+      h('button', {
+        type: 'button', class: 'btn btn-bad btn-small',
+        onclick: async () => {
+          if (!(await confirmDialog({ title: t('Gruppe verlassen?', 'Leave group?'), text: t('Du siehst die Nachrichten danach nicht mehr. Ein Mitglied kann dich wieder einladen.', 'You won\'t see the messages any more. A member can invite you again.'), ok: t('Verlassen', 'Leave'), danger: true }))) return;
+          try { await leaveGroup(info.id); close(); toast(t('Gruppe verlassen', 'Left the group')); location.hash = '#/freunde'; } catch (e) { toast(t('Hat nicht geklappt', 'That didn\'t work'), germanError(e)); }
+        },
+      }, t('Gruppe verlassen', 'Leave group')),
+      h('button', { type: 'button', class: 'btn', onclick: close }, t('Schließen', 'Close'))));
+  dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  release = showModal(dlg);
+}
+
+/* ---------------------------------------------------------------- Gruppenchat */
+
+export async function renderGroup(main, gid) {
+  const page = h('div', { class: 'page chat-page' });
+  main.append(page);
+  if (!CLOUD_ENABLED) { page.append(h('p', { class: 'muted' }, t('Konten sind noch nicht eingerichtet.', 'Accounts are not set up yet.'))); return; }
+  await initCloud();
+  if (!currentUser()) { location.replace('#/freunde'); return; }
+  const wait = h('p', { class: 'muted social-loading' }, t('Lädt ...', 'Loading ...'));
+  page.append(wait);
+  let info;
+  try { info = await groupDetails(gid); } catch (err) { wait.textContent = groupsAvailable() ? germanError(err) : NOT_READY(); return; }
+  wait.remove();
+  if (!info) {
+    page.append(h('section', { class: 'social-empty' }, h('div', { html: bit({ size: 110, mood: 'think' }) }),
+      h('p', {}, t('Diese Gruppe gibt es nicht, oder du bist kein Mitglied mehr.', 'This group doesn\'t exist, or you are no longer a member.')),
+      h('a', { class: 'btn btn-sky', href: '#/freunde' }, t('Zu den Freunden', 'Go to friends'))));
+    return;
+  }
+  const byId = Object.fromEntries(info.members.map(m => [m.user_id, m.profile]));
+  const others = info.members.filter(m => m.user_id !== currentUser().id).map(m => m.profile);
+
+  const box = chatBox({
+    meId: currentUser().id,
+    canWrite: true,
+    placeholder: t('Nachricht schreiben', 'Write a message'),
+    send: body => sendGroupMessage(gid, body),
+    sendFile: (file, body) => sendGroupAttachment(gid, file, body),
+    senderOf: m => {
+      const p = byId[m.sender];
+      return { name: p ? displayName(p) : t('Ehemaliges Mitglied', 'Former member'), avatarEl: personAvatar(p, 22) };
+    },
+  });
+
+  const rerender = () => { main.innerHTML = ''; renderGroup(main, gid); };
+  page.append(
+    h('header', { class: 'chat-head' },
+      h('a', { class: 'icon-btn', href: '#/freunde', 'aria-label': t('Zurück zu den Freunden', 'Back to friends'), html: icon('back', 22) }),
+      h('button', { type: 'button', class: 'search-person group-head', onclick: () => openMembersDialog(info, rerender) },
+        groupAvatar(others, 44),
+        h('span', {}, h('b', {}, info.name), h('small', {}, t(`${info.members.length} Mitglieder · ${others.map(displayName).slice(0, 3).join(', ')}${others.length > 3 ? ' …' : ''}`, `${info.members.length} members · ${others.map(displayName).slice(0, 3).join(', ')}${others.length > 3 ? ' …' : ''}`)))),
+      h('button', { type: 'button', class: 'icon-btn', title: t('Mitglieder', 'Members'), 'aria-label': t('Mitglieder und Einstellungen', 'Members and settings'), onclick: () => openMembersDialog(info, rerender), html: icon('more', 24) })),
+    box.list,
+    box.form,
+    h('p', { class: 'muted social-note' }, t('Nur Mitglieder der Gruppe sehen die Nachrichten. Sei nett zueinander.', 'Only group members see the messages. Be nice to each other.')));
+
+  try {
+    (await loadGroupThread(gid)).forEach(m => box.add(m));
+    box.empty(t('Noch keine Nachrichten. Sag Hallo!', 'No messages yet. Say hello!'));
+    box.toBottom();
+    markGroupRead(gid).catch(() => {});
+  } catch (err) {
+    box.error(germanError(err));
+  }
+  const stop = onLive((kind, row) => {
+    if (!document.body.contains(box.list)) { stop(); return; }
+    if (kind === 'group_message' && row.group_id === gid && row.sender !== currentUser().id) {
+      if (!byId[row.sender]) { rerender(); return; }
+      box.add(row, { live: true });
+      markGroupRead(gid).catch(() => {});
+    }
+  });
+  box.focus();
+}

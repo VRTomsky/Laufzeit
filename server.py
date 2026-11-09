@@ -462,7 +462,7 @@ def main() -> None:
             webbrowser.open(URL)
         return
     print("")
-    print("  LAUFZEIT")
+    print("  BITWEG")
     print(f"  laeuft auf {URL}")
     print("  Fenster offen lassen. Beenden mit Strg+C oder Fenster schliessen.")
     print("")

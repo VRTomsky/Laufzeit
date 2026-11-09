@@ -4,7 +4,7 @@
 
 import { concept, mc, predict, fill, order, write, cppFile } from './helpers.js';
 
-const RAYLIB_START = '#include "raylib.h"\n\nint main() {\n    InitWindow(800, 450, "Laufzeit");\n    SetTargetFPS(60);\n\n    while (!WindowShouldClose()) {\n        BeginDrawing();\n        ClearBackground(RAYWHITE);\n        DrawText("Hallo Raylib", 300, 200, 30, DARKGRAY);\n        EndDrawing();\n    }\n\n    CloseWindow();\n    return 0;\n}';
+const RAYLIB_START = '#include "raylib.h"\n\nint main() {\n    InitWindow(800, 450, "Bitweg");\n    SetTargetFPS(60);\n\n    while (!WindowShouldClose()) {\n        BeginDrawing();\n        ClearBackground(RAYWHITE);\n        DrawText("Hallo Raylib", 300, 200, 30, DARKGRAY);\n        EndDrawing();\n    }\n\n    CloseWindow();\n    return 0;\n}';
 
 const COIN_START = '#include "raylib.h"\n\nint main() {\n    InitWindow(800, 450, "Muenzen");\n    SetTargetFPS(60);\n    Rectangle spieler = {100, 200, 40, 40};\n    Rectangle muenze = {500, 200, 20, 20};\n    int punkte = 0;\n\n    while (!WindowShouldClose()) {\n        float dt = GetFrameTime();\n        if (IsKeyDown(KEY_RIGHT)) spieler.x += 300 * dt;\n        if (IsKeyDown(KEY_LEFT)) spieler.x -= 300 * dt;\n        if (IsKeyDown(KEY_DOWN)) spieler.y += 300 * dt;\n        if (IsKeyDown(KEY_UP)) spieler.y -= 300 * dt;\n\n        // Kollision und Punkte\n\n        BeginDrawing();\n        ClearBackground(RAYWHITE);\n        DrawRectangleRec(spieler, BLUE);\n        DrawRectangleRec(muenze, GOLD);\n        // Punktestand anzeigen\n        EndDrawing();\n    }\n    CloseWindow();\n    return 0;\n}';
 const COIN_SOLUTION = COIN_START
@@ -24,7 +24,7 @@ export const cppUnits12to14 = [
         goal: 'Den Aufbau eines Raylib-Programms verstehen.',
         steps: [
           concept('Raylib',
-            '**Raylib** ist eine kleine Bibliothek für Spiele. Du schreibst den Game-Loop selbst, Raylib kümmert sich um Fenster, Grafik und Tastatur.\n\nRaylib-Code läuft nicht hier in Laufzeit, weil er ein echtes Fenster öffnet. Installiere Raylib nach Anleitung 05 in der Werkstatt. Hier lernst du den Aufbau, geprüft wird über Regeln.',
+            '**Raylib** ist eine kleine Bibliothek für Spiele. Du schreibst den Game-Loop selbst, Raylib kümmert sich um Fenster, Grafik und Tastatur.\n\nRaylib-Code läuft nicht hier in Bitweg, weil er ein echtes Fenster öffnet. Installiere Raylib nach Anleitung 05 in der Werkstatt. Hier lernst du den Aufbau, geprüft wird über Regeln.',
             { code: RAYLIB_START }),
           order('Bring den Ablauf in die richtige Reihenfolge.',
             ['InitWindow(800, 450, "Spiel");', 'while (!WindowShouldClose()) {', '    BeginDrawing();', '    ClearBackground(BLACK);', '    EndDrawing();', '}', 'CloseWindow();'],

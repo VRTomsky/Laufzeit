@@ -278,7 +278,7 @@ function backupSection() {
 
   return h('section', { class: 'section' },
     h('h2', {}, t('Sicherung auf dem Desktop', 'Backup on the desktop')),
-    h('p', {}, t('Laufzeit speichert deinen kompletten Stand automatisch im Ordner „Laufzeit-Sicherungen“ auf deinem Desktop: nach dem Lernen, beim Schließen und einmal am Tag. Pro Tag eine Datei, die letzten 14 Tage bleiben.', 'Laufzeit automatically saves your complete progress in the folder “Laufzeit-Sicherungen” on your desktop: after learning, when closing and once a day. One file per day, the last 14 days are kept.')),
+    h('p', {}, t('Bitweg speichert deinen kompletten Stand automatisch im Ordner „Laufzeit-Sicherungen“ auf deinem Desktop: nach dem Lernen, beim Schließen und einmal am Tag. Pro Tag eine Datei, die letzten 14 Tage bleiben.', 'Bitweg automatically saves your complete progress in the folder “Laufzeit-Sicherungen” on your desktop: after learning, when closing and once a day. One file per day, the last 14 days are kept.')),
     h('div', { class: 'field' }, h('span', {}, t('Automatisch sichern', 'Automatic backup')),
       segmented([[true, 'An'], [false, t('Aus', 'Off')]], store.state.settings.autoBackup !== false, v => store.update(s => { s.settings.autoBackup = v; }), t('Automatisch sichern', 'Automatic backup'))),
     status,
@@ -432,7 +432,7 @@ export function renderProfile(main) {
 
 function exportData() {
   const blob = new Blob([store.exportJSON()], { type: 'application/json' });
-  const a = h('a', { href: URL.createObjectURL(blob), download: `laufzeit-sicherung-${dayKey()}.json` });
+  const a = h('a', { href: URL.createObjectURL(blob), download: `bitweg-sicherung-${dayKey()}.json` });
   document.body.append(a);
   a.click();
   a.remove();

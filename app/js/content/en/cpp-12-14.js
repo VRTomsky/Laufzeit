@@ -4,7 +4,7 @@
 
 import { concept, mc, predict, fill, order, write, cppFile } from '../helpers.js';
 
-const RAYLIB_START = '#include "raylib.h"\n\nint main() {\n    InitWindow(800, 450, "Laufzeit");\n    SetTargetFPS(60);\n\n    while (!WindowShouldClose()) {\n        BeginDrawing();\n        ClearBackground(RAYWHITE);\n        DrawText("Hello Raylib", 300, 200, 30, DARKGRAY);\n        EndDrawing();\n    }\n\n    CloseWindow();\n    return 0;\n}';
+const RAYLIB_START = '#include "raylib.h"\n\nint main() {\n    InitWindow(800, 450, "Bitweg");\n    SetTargetFPS(60);\n\n    while (!WindowShouldClose()) {\n        BeginDrawing();\n        ClearBackground(RAYWHITE);\n        DrawText("Hello Raylib", 300, 200, 30, DARKGRAY);\n        EndDrawing();\n    }\n\n    CloseWindow();\n    return 0;\n}';
 
 const COIN_START = '#include "raylib.h"\n\nint main() {\n    InitWindow(800, 450, "Coins");\n    SetTargetFPS(60);\n    Rectangle player = {100, 200, 40, 40};\n    Rectangle coin = {500, 200, 20, 20};\n    int points = 0;\n\n    while (!WindowShouldClose()) {\n        float dt = GetFrameTime();\n        if (IsKeyDown(KEY_RIGHT)) player.x += 300 * dt;\n        if (IsKeyDown(KEY_LEFT)) player.x -= 300 * dt;\n        if (IsKeyDown(KEY_DOWN)) player.y += 300 * dt;\n        if (IsKeyDown(KEY_UP)) player.y -= 300 * dt;\n\n        // collision and points\n\n        BeginDrawing();\n        ClearBackground(RAYWHITE);\n        DrawRectangleRec(player, BLUE);\n        DrawRectangleRec(coin, GOLD);\n        // show the score\n        EndDrawing();\n    }\n    CloseWindow();\n    return 0;\n}';
 const COIN_SOLUTION = COIN_START
@@ -24,7 +24,7 @@ export const cppUnits12to14 = [
         goal: 'Understand the structure of a Raylib program.',
         steps: [
           concept('Raylib',
-            '**Raylib** is a small library for games. You write the game loop yourself, Raylib takes care of the window, graphics and keyboard.\n\nRaylib code doesn\'t run here in Laufzeit, because it opens a real window. Install Raylib following guide 05 in the Workshop. Here you learn the structure, checked by rules.',
+            '**Raylib** is a small library for games. You write the game loop yourself, Raylib takes care of the window, graphics and keyboard.\n\nRaylib code doesn\'t run here in Bitweg, because it opens a real window. Install Raylib following guide 05 in the Workshop. Here you learn the structure, checked by rules.',
             { code: RAYLIB_START }),
           order('Put the flow in the right order.',
             ['InitWindow(800, 450, "Game");', 'while (!WindowShouldClose()) {', '    BeginDrawing();', '    ClearBackground(BLACK);', '    EndDrawing();', '}', 'CloseWindow();'],

@@ -144,7 +144,7 @@ export const pythonUnits9to11 = [
         goal: 'Den Aufbau eines pygame-Spiels verstehen.',
         steps: [
           concept('pygame',
-            '**pygame** ist eine Bibliothek für 2D-Spiele in Python. Installieren im Terminal: `pip install pygame`. Danach läuft der Code in VS Code, nicht hier in Laufzeit, weil er ein echtes Fenster öffnet.\n\nDer Aufbau ist immer der Game-Loop: Ereignisse lesen, Welt aktualisieren, zeichnen, Bild anzeigen.',
+            '**pygame** ist eine Bibliothek für 2D-Spiele in Python. Installieren im Terminal: `pip install pygame`. Danach läuft der Code in VS Code, nicht hier in Bitweg, weil er ein echtes Fenster öffnet.\n\nDer Aufbau ist immer der Game-Loop: Ereignisse lesen, Welt aktualisieren, zeichnen, Bild anzeigen.',
             { code: 'import pygame\n\npygame.init()\nfenster = pygame.display.set_mode((640, 480))\nuhr = pygame.time.Clock()\nx = 50\nlaeuft = True\n\nwhile laeuft:\n    for event in pygame.event.get():\n        if event.type == pygame.QUIT:\n            laeuft = False\n    x += 2\n    fenster.fill((30, 30, 40))\n    pygame.draw.circle(fenster, (255, 200, 0), (x, 240), 20)\n    pygame.display.flip()\n    uhr.tick(60)\n\npygame.quit()' }),
           order('Bring einen Frame des pygame-Loops in die richtige Reihenfolge.',
             ['for event in pygame.event.get():', '    if event.type == pygame.QUIT:', '        laeuft = False', 'x += 2', 'fenster.fill((30, 30, 40))', 'pygame.display.flip()'],

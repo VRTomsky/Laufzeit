@@ -67,16 +67,16 @@ function personalGuides() {
   return { open, why };
 }
 
-/** Online-Version: Laufzeit auf den eigenen PC holen (fuer echtes C++ und eigene Programme) */
+/** Online-Version: Bitweg auf den eigenen PC holen (fuer echtes C++ und eigene Programme) */
 function downloadSection() {
   return h('section', { class: 'section download-box' },
-    h('h2', {}, t('Laufzeit herunterladen', 'Download Laufzeit')),
-    p(t('Online läuft Python direkt im Browser. **C++ braucht einen echten Compiler**, und der läuft nur auf deinem PC. Außerdem willst du am Ende sowieso eigene Programme auf deinem Rechner schreiben. So holst du dir Laufzeit:', 'Online, Python runs directly in the browser. **C++ needs a real compiler**, and that only runs on your PC. And in the end you\'ll want to write your own programs on your computer anyway. Here\'s how to get Laufzeit:')),
+    h('h2', {}, t('Bitweg herunterladen', 'Download Bitweg')),
+    p(t('Online läuft Python direkt im Browser. **C++ braucht einen echten Compiler**, und der läuft nur auf deinem PC. Außerdem willst du am Ende sowieso eigene Programme auf deinem Rechner schreiben. So holst du dir Bitweg:', 'Online, Python runs directly in the browser. **C++ needs a real compiler**, and that only runs on your PC. And in the end you\'ll want to write your own programs on your computer anyway. Here\'s how to get Bitweg:')),
     h('ol', { class: 'steps' },
       h('li', { html: inline(t('Lade das ZIP herunter und entpacke es, z. B. auf den Desktop.', 'Download the ZIP and unpack it, e.g. to your desktop.')) }),
       h('li', { html: inline(t('Installiere Python von python.org (Haken bei **„Add python.exe to PATH“**), siehe Anleitung 02.', 'Install Python from python.org (tick **“Add python.exe to PATH”**), see guide 02.')) }),
       h('li', { html: inline(t('Für C++: Visual Studio mit **„Desktopentwicklung mit C++“**, siehe Anleitung 03.', 'For C++: Visual Studio with **“Desktop development with C++”**, see guide 03.')) }),
-      h('li', { html: inline(t('Doppelklick auf **`start.bat`**. Laufzeit öffnet sich unter `127.0.0.1:5741`.', 'Double-click **`start.bat`**. Laufzeit opens at `127.0.0.1:5741`.')) }),
+      h('li', { html: inline(t('Doppelklick auf **`start.bat`**. Bitweg öffnet sich unter `127.0.0.1:5741`.', 'Double-click **`start.bat`**. Bitweg opens at `127.0.0.1:5741`.')) }),
       h('li', { html: inline(t('Mit deinem Konto einloggen. Dein Fortschritt kommt automatisch mit.', 'Log in with your account. Your progress comes along automatically.')) })),
     h('div', { class: 'row-actions' },
       h('a', { class: 'btn btn-go', href: DOWNLOAD_URL, rel: 'noopener' }, 'ZIP herunterladen'),
@@ -96,13 +96,13 @@ export function renderSetup(main) {
     sys.innerHTML = '';
     if (s.web) {
       sys.append(
-        sysRow('Version', 'ok', 'online', t('Laufzeit im Browser, ohne Installation', 'Laufzeit in the browser, no installation')),
+        sysRow('Version', 'ok', 'online', t('Bitweg im Browser, ohne Installation', 'Bitweg in the browser, no installation')),
         sysRow('Python', 'ok', 'bereit', t(`${s.python.version}, läuft direkt im Browser (Pyodide)`, `${s.python.version}, runs directly in the browser (Pyodide)`)),
-        sysRow('C++', 'bad', 'nur lokal', t('Im Browser gibt es keinen Compiler. Lade Laufzeit herunter, siehe unten.', 'There is no compiler in the browser. Download Laufzeit, see below.')));
+        sysRow('C++', 'bad', 'nur lokal', t('Im Browser gibt es keinen Compiler. Lade Bitweg herunter, siehe unten.', 'There is no compiler in the browser. Download Bitweg, see below.')));
       return s;
     }
     sys.append(
-      sysRow('Server', s.online ? 'ok' : 'bad', s.online ? t('läuft', 'running') : 'aus', s.online ? t('Laufzeit läuft lokal auf 127.0.0.1:5741', 'Laufzeit runs locally at 127.0.0.1:5741') : t('Starte die App mit start.bat', 'Start the app with start.bat')),
+      sysRow('Server', s.online ? 'ok' : 'bad', s.online ? t('läuft', 'running') : 'aus', s.online ? t('Bitweg läuft lokal auf 127.0.0.1:5741', 'Bitweg runs locally at 127.0.0.1:5741') : t('Starte die App mit start.bat', 'Start the app with start.bat')),
       sysRow('Python', s.python ? 'ok' : 'bad', s.python ? 'bereit' : 'fehlt', s.python ? s.python.version : t('Siehe Anleitung 02', 'See guide 02')),
       sysRow('C++', s.cpp ? 'ok' : s.ready ? 'bad' : 'wait', s.cpp ? 'bereit' : s.ready ? 'fehlt' : 'sucht', s.cpp ? s.cpp.version : s.ready ? t('Siehe Anleitung 03', 'See guide 03') : t('Der Compiler wird beim Start gesucht, das dauert ein paar Sekunden', 'The compiler is searched at startup, this takes a few seconds')));
     if (!s.ready) setTimeout(() => check(true), 2500);
@@ -113,12 +113,12 @@ export function renderSetup(main) {
     h('header', { class: 'page-head' },
       h('p', { class: 'eyebrow' }, t('Werkstatt', 'Workshop')),
       h('h1', { class: 'display' }, t('Werkstatt', 'Workshop')),
-      h('p', { class: 'lede' }, t('Alles, was du brauchst, um auch außerhalb von Laufzeit echte Programme zu schreiben. Für Windows, Schritt für Schritt.', 'Everything you need to write real programs outside of Laufzeit too. For Windows, step by step.'))),
+      h('p', { class: 'lede' }, t('Alles, was du brauchst, um auch außerhalb von Bitweg echte Programme zu schreiben. Für Windows, Schritt für Schritt.', 'Everything you need to write real programs outside of Bitweg too. For Windows, step by step.'))),
     mobileStats(),
     IS_WEB ? downloadSection() : null,
     h('section', { class: 'section' },
       h('h2', {}, t('Dein System', 'Your system')),
-      h('p', {}, IS_WEB ? t('In der Online-Version prüft Laufzeit Python direkt im Browser:', 'In the online version Laufzeit checks Python directly in the browser:') : t('Laufzeit prüft deinen Code mit den Werkzeugen auf deinem PC. So sieht es gerade aus:', 'Laufzeit checks your code with the tools on your PC. This is the current state:')),
+      h('p', {}, IS_WEB ? t('In der Online-Version prüft Bitweg Python direkt im Browser:', 'In the online version Bitweg checks Python directly in the browser:') : t('Bitweg prüft deinen Code mit den Werkzeugen auf deinem PC. So sieht es gerade aus:', 'Bitweg checks your code with the tools on your PC. This is the current state:')),
       sys,
       h('button', { type: 'button', class: 'btn btn-small', onclick: () => check(true).then(() => toast(t('Neu geprüft', 'Checked again'))) }, h('span', { html: icon('reset', 16) }), t('Neu prüfen', 'Check again'))),
 
@@ -144,22 +144,22 @@ export function renderSetup(main) {
         cmd('pip install pygame'),
       ]),
       guide(3, t('C++-Compiler einrichten', 'Set up a C++ compiler'), t('Visual Studio oder g++', 'Visual Studio or g++'), [
-        p(t('**Variante A, empfohlen für dich:** der Compiler aus **Visual Studio Community**. Den brauchst du später sowieso für Unreal. Laufzeit hat ihn auf deinem PC schon gefunden.', '**Option A, recommended for you:** the compiler from **Visual Studio Community**. You\'ll need it for Unreal later anyway. Laufzeit already found it on your PC.')),
+        p(t('**Variante A, empfohlen für dich:** der Compiler aus **Visual Studio Community**. Den brauchst du später sowieso für Unreal. Bitweg hat ihn auf deinem PC schon gefunden.', '**Option A, recommended for you:** the compiler from **Visual Studio Community**. You\'ll need it for Unreal later anyway. Bitweg already found it on your PC.')),
         p(t('Falls er fehlt: Starte den **Visual Studio Installer**, wähle **Ändern** und setze den Haken bei **"Desktopentwicklung mit C++"**. Für Unreal zusätzlich **"Spieleentwicklung mit C++"**.', 'If it\'s missing: start the **Visual Studio Installer**, choose **Modify** and tick **"Desktop development with C++"**. For Unreal also **"Game development with C++"**.')),
-        p(t('Um ihn außerhalb von Laufzeit zu nutzen, öffne über das Startmenü die **Developer PowerShell for VS**. Nur dort ist `cl` bekannt:', 'To use it outside Laufzeit, open **Developer PowerShell for VS** from the start menu. Only there is `cl` known:')),
+        p(t('Um ihn außerhalb von Bitweg zu nutzen, öffne über das Startmenü die **Developer PowerShell for VS**. Nur dort ist `cl` bekannt:', 'To use it outside Bitweg, open **Developer PowerShell for VS** from the start menu. Only there is `cl` known:')),
         cmd('cl /EHsc /std:c++20 /utf-8 hello.cpp'),
         cmd('.\\hello.exe'),
         p(t('**Variante B:** g++ über **MSYS2** (msys2.org). Nach der Installation im MSYS2-Fenster:', '**Option B:** g++ via **MSYS2** (msys2.org). After installing, in the MSYS2 window:')),
         cmd('pacman -S mingw-w64-ucrt-x86_64-gcc'),
         p(t('Danach `C:\\msys64\\ucrt64\\bin` zur Windows-Umgebungsvariable **Path** hinzufügen und VS Code neu starten. Test mit `g++ --version`.', 'Then add `C:\\msys64\\ucrt64\\bin` to the Windows environment variable **Path** and restart VS Code. Test with `g++ --version`.')),
-        h('div', { class: 'note', html: inline(t('Laufzeit nimmt automatisch g++, wenn es im PATH ist, sonst den Visual-Studio-Compiler.', 'Laufzeit automatically uses g++ if it\'s on the PATH, otherwise the Visual Studio compiler.')) }),
+        h('div', { class: 'note', html: inline(t('Bitweg nimmt automatisch g++, wenn es im PATH ist, sonst den Visual-Studio-Compiler.', 'Bitweg automatically uses g++ if it\'s on the PATH, otherwise the Visual Studio compiler.')) }),
       ]),
       guide(4, t('Erstes C++-Programm in VS Code', 'First C++ program in VS Code'), t('Schreiben, kompilieren, starten', 'Write, compile, run'), [
         p(t('Leg im Ordner `Code` eine Datei `hello.cpp` an und füg das Grundgerüst aus Lektion 1.1 ein.', 'Create a file `hello.cpp` in the `Code` folder and paste the skeleton from lesson 1.1.')),
         p(t('Öffne die **Developer PowerShell for VS**, wechsle in deinen Ordner und kompiliere:', 'Open **Developer PowerShell for VS**, go to your folder and compile:')),
         cmd('cd $HOME\\Desktop\\Code'),
         cmd('cl /EHsc /std:c++20 /utf-8 hello.cpp'),
-        p(t('Es entsteht `hello.exe`. Starte sie mit `.\\hello.exe`. Genau das macht Laufzeit bei jedem Klick auf **Ausführen** im Hintergrund.', 'This creates `hello.exe`. Run it with `.\\hello.exe`. That\'s exactly what Laufzeit does in the background every time you click **Run**.')),
+        p(t('Es entsteht `hello.exe`. Starte sie mit `.\\hello.exe`. Genau das macht Bitweg bei jedem Klick auf **Ausführen** im Hintergrund.', 'This creates `hello.exe`. Run it with `.\\hello.exe`. That\'s exactly what Bitweg does in the background every time you click **Run**.')),
         p(t('Tipp: Startest du VS Code aus der Developer PowerShell mit `code .`, kennt auch das Terminal in VS Code den Compiler.', 'Tip: if you start VS Code from the Developer PowerShell with `code .`, the terminal in VS Code knows the compiler too.')),
       ]),
       guide(5, t('Raylib für eigene Spiele', 'Raylib for your own games'), t('Kommt mit dem Raylib-Abschnitt', 'Comes with the Raylib unit'), [

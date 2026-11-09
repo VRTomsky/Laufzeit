@@ -1,4 +1,4 @@
-# Laufzeit
+# Bitweg
 
 Lokale Lern-App für Python und C++ im Stil von Duolingo. Läuft komplett auf deinem PC, ohne Konto und ohne Cloud.
 
@@ -75,6 +75,9 @@ Unter **Profil, Profil bearbeiten** stellst du Name, Benutzername, „Über mich
 ## Online-Version, Konten und Freunde
 
 - **Online:** https://vrtomsky.github.io/Laufzeit/ (GitHub-Repo `VRTomsky/Laufzeit`). Jeder Push auf `main` veröffentlicht `app/` neu, über `.github/workflows/pages.yml`.
+- **Name:** Seit November 2026 heißt die App **Bitweg** (laufzeit.de war vergeben, bitweg.de und bitweg.com waren frei). Ordner, Repo, Server-Kopfzeile `X-Laufzeit` und die Speicher-Schlüssel `laufzeit.*` heißen absichtlich weiter so, damit kein Fortschritt verloren geht.
+- **Handy:** Die Seite ist eine PWA (`manifest.webmanifest`, `sw.js`, Icons in `img/`). In Chrome: Menü → „App installieren“. Unten erscheint eine Leiste mit allen Bereichen.
+- **Gruppenchats:** `views/groups.js`, Datenbank `supabase/03-gruppen.sql`. Chat-Fenster für Freunde und Gruppen teilen sich `views/chatbox.js` (Scrollen, Anhänge, Bildvorschau mit Zoom: Mausrad zur Mausposition, ziehen, Doppelklick, auf dem Handy zwei Finger).
 - Woran die App merkt, dass sie online läuft: Adresse ist nicht `127.0.0.1`/`localhost` (`app/js/env.js`). Zum Testen lokal `?web` an die Adresse hängen.
 - **Python online:** Pyodide (echtes CPython 3.12 als WebAssembly) in einem Web Worker (`pyworker.js`, `webpython.js`). Endlosschleifen: Worker wird nach 5 Sekunden beendet und neu gestartet. Beim ersten Mal lädt es etwa 10 MB.
 - **C++ online:** kein Compiler. Aufgaben werden über die Regeln geprüft („Angenommen, aber ungeprüft“). In der Werkstatt steht, wie man Laufzeit herunterlädt.

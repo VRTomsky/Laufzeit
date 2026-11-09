@@ -15,6 +15,7 @@ import { renderOnboarding } from './views/onboarding.js';
 import { startAutoBackup } from './backup.js';
 import { renderProjects, startProject, startChallenge } from './views/projects.js';
 import { renderFriends, renderUser, renderChat } from './views/friends.js';
+import { renderGroup } from './views/groups.js';
 import { renderAccount } from './views/account.js';
 import { initCloud } from './cloud.js';
 import { allowNavigation } from './guard.js';
@@ -37,7 +38,7 @@ function route() {
   document.body.dataset.lang = store.state.activeLang;
 
   if (name === 'konto') {
-    document.title = t('Konto · Laufzeit', 'Account · Laufzeit');
+    document.title = t('Konto · Bitweg', 'Account · Bitweg');
     renderAccount(arg);
     return;
   }
@@ -46,7 +47,7 @@ function route() {
       location.replace('#/pfad');
       return;
     }
-    document.title = t('Willkommen · Laufzeit', 'Welcome · Laufzeit');
+    document.title = t('Willkommen · Bitweg', 'Welcome · Bitweg');
     renderOnboarding(arg === 'kurs' ? arg2 : null);
     return;
   }
@@ -56,39 +57,45 @@ function route() {
   }
 
   if (name === 'lektion' && arg) {
-    document.title = t('Lektion · Laufzeit', 'Lesson · Laufzeit');
+    document.title = t('Lektion · Bitweg', 'Lesson · Bitweg');
     startLesson(arg, arg2 === 'gold' ? 'gold' : 'auto');
     return;
   }
   if (name === 'projekt' && arg) {
-    document.title = t('Projekt · Laufzeit', 'Project · Laufzeit');
+    document.title = t('Projekt · Bitweg', 'Project · Bitweg');
     startProject(arg);
     return;
   }
   if (name === 'aufgabe' && arg) {
-    document.title = t('Aufgabe · Laufzeit', 'Task · Laufzeit');
+    document.title = t('Aufgabe · Bitweg', 'Task · Bitweg');
     startChallenge(arg);
     return;
   }
   if (name === 'test' && arg) {
-    document.title = t('Abschnittstest · Laufzeit', 'Unit test · Laufzeit');
+    document.title = t('Abschnittstest · Bitweg', 'Unit test · Bitweg');
     startUnitTest(arg, arg2 === 'gold' ? 'gold' : 'normal');
     return;
   }
   if (name === 'training' && arg === 'los') {
-    document.title = 'Training · Laufzeit';
+    document.title = 'Training · Bitweg';
     startTraining();
     return;
   }
+  if (name === 'gruppe' && arg) {
+    document.title = t('Gruppe · Bitweg', 'Group · Bitweg');
+    renderGroup(renderShell('freunde'), decodeURIComponent(arg));
+    window.scrollTo({ top: 0 });
+    return;
+  }
   if ((name === 'nutzer' || name === 'chat') && arg) {
-    document.title = t(`${name === 'chat' ? 'Nachrichten' : 'Profil'} · Laufzeit`, `${name === 'chat' ? 'Messages' : 'Profile'} · Laufzeit`);
+    document.title = t(`${name === 'chat' ? 'Nachrichten' : 'Profil'} · Bitweg`, `${name === 'chat' ? 'Messages' : 'Profile'} · Bitweg`);
     const main = renderShell('freunde');
     (name === 'chat' ? renderChat : renderUser)(main, decodeURIComponent(arg));
     window.scrollTo({ top: 0 });
     return;
   }
   const view = VIEWS[name] ? name : 'pfad';
-  document.title = `${TITLES[view]} · Laufzeit`;
+  document.title = `${TITLES[view]} · Bitweg`;
   const main = renderShell(view);
   VIEWS[view](main);
   if (view !== 'pfad') window.scrollTo({ top: 0 });
@@ -105,3 +112,8 @@ route();
 startAutoBackup();
 getStatus();
 initCloud();
+
+// Installierbar machen (Handy: "Zum Startbildschirm hinzufuegen")
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
