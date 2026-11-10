@@ -424,3 +424,32 @@ dialog.lightbox { grid-template-rows: auto 1fr auto; overflow: hidden; }
   .chat-page > .social-note { display: none; }
   .chat-page { height: calc(100dvh - 130px - env(safe-area-inset-bottom)); }
 }
+
+
+/* ---------------------------------------------------------------- iPhone / Safari */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  /* Notch, Dynamic Island und runde Ecken: nichts unter die Uhr oder an den Rand */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+a, button, [role="button"], label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+@supports (height: 100dvh) {
+  .shell, .onb, .lesson, .finish, .ws { min-height: 100dvh; }
+  .rail, .ledger { height: 100dvh; }
+}
+.auth-spinner { width: 40px; height: 40px; margin: var(--s5) auto; border-radius: 50%; border: 4px solid var(--rule); border-top-color: var(--sky, #1CB0F6); animation: auth-spin .8s linear infinite; }
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+@media (max-width: 820px) {
+  /* Safari zoomt beim Tippen in Felder unter 16px die ganze Seite und verschiebt alles */
+  input, select, textarea, .editor { font-size: 16px !important; }
+  .rail .brand-row { min-width: 0; }
+  .rail .brand-row > * { min-width: 0; }
+  .main { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+  #toasts { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .auth-page { padding-bottom: calc(var(--s7) + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 820px) and (pointer: coarse) {
+  .ed-input, .ed-hl { font-size: 16px; }
+}

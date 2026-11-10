@@ -193,9 +193,26 @@ function renderNewPassword() {
   pw.focus();
 }
 
+function loading() {
+  frame(t('Einen Moment ...', 'One moment ...'), t('Verbinde mit dem Konto-Dienst.', 'Connecting to the account service.'), h('div', { class: 'auth-spinner', 'aria-hidden': 'true' }), 'think');
+}
+
+function offline(sub) {
+  frame(t('Keine Verbindung', 'No connection'),
+    t('Der Konto-Dienst antwortet gerade nicht. Prüf dein Internet. Falls du die Seite aus WhatsApp, Instagram oder TikTok geöffnet hast: oben auf „In Safari öffnen“ bzw. „Im Browser öffnen“ tippen.', 'The account service isn\'t answering right now. Check your internet. If you opened the page from WhatsApp, Instagram or TikTok: tap “Open in Safari” or “Open in browser”.'),
+    h('div', { class: 'auth-actions' },
+      h('button', { class: 'btn btn-go', type: 'button', onclick: () => renderAccount(sub) }, t('Nochmal versuchen', 'Try again')),
+      h('a', { class: 'btn btn-sky', href: store.state.onboarded ? '#/pfad' : '#/start' }, t('Zurück', 'Back'))), 'think');
+}
+
 export async function renderAccount(sub) {
   if (!CLOUD_ENABLED) { notConfigured(); return; }
-  await initCloud();
+  // Sofort etwas zeigen, damit der Knopf nie "nichts tut"
+  const slow = setTimeout(loading, 150);
+  const backend = await initCloud();
+  clearTimeout(slow);
+  if (!location.hash.startsWith('#/konto')) return; // inzwischen woanders hin
+  if (!backend) { offline(sub); return; }
   if (sub === 'neues-passwort') { renderNewPassword(); return; }
   if (currentUser()) { location.replace('#/profil'); return; }
   if (sub === 'registrieren') renderRegister();

@@ -112,7 +112,7 @@ function renderUnit(course, unit, unitIndex, states, startIndex) {
       const lesson = node.lesson;
       status = states.get(lesson.id);
       const rec = s.langs[course.id].lessons[lesson.id];
-      const prev = i > 0 ? lessons[i - 1] : unitIndex > 0 ? course.units[unitIndex - 1].lessons.at(-1) : null;
+      const prev = i > 0 ? lessons[i - 1] : unitIndex > 0 ? course.units[unitIndex - 1].lessons[course.units[unitIndex - 1].lessons.length - 1] : null;
       isGold = Boolean(rec?.gold);
       glyph = isGold ? solidIcon('crown', 34) : status === 'done' ? solidIcon('checkBig', 34) : status === 'locked' ? solidIcon('lockBig', 30) : solidIcon('star', 34);
       label = t(`Lektion ${unitIndex + 1}.${i + 1}: ${lesson.title}`, `Lesson ${unitIndex + 1}.${i + 1}: ${lesson.title}`);

@@ -58,12 +58,30 @@ export function germanError(err) {
 
 const must = ({ data, error }) => { if (error) throw error; return data; };
 
+/** Bricht ab, wenn der Server zu lange nicht antwortet (statt endlos zu warten) */
+function withTimeout(promise, ms, msg) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(msg || t('Keine Antwort vom Server. Prüf dein Internet und versuch es nochmal.', 'No answer from the server. Check your internet and try again.'))), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+// Safari (vor allem am iPhone) bleibt mit navigator.locks manchmal haengen, dann tut kein Knopf mehr etwas.
+// Deshalb eine einfache Sperre nur innerhalb dieses Tabs.
+let lockChain = Promise.resolve();
+function tabLock(_name, _timeout, fn) {
+  const run = lockChain.then(() => fn());
+  lockChain = run.catch(() => {});
+  return run;
+}
+
 /* ================================================================ Supabase-Backend */
 
 async function supabaseBackend() {
-  const { createClient } = await import(SUPABASE_JS);
+  const { createClient } = await withTimeout(import(SUPABASE_JS), 25000);
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'laufzeit.auth' },
+    auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'laufzeit.auth', lock: tabLock },
   });
   const uid = () => user?.id;
   let msgCols = 'id,sender,recipient,body,created_at,read_at,attachment';
@@ -79,7 +97,7 @@ async function supabaseBackend() {
   const redirect = () => (IS_WEB ? WEB_URL : `${location.origin}/`);
   const self = {
     async session() {
-      const { data } = await sb.auth.getSession();
+      const { data } = await withTimeout(sb.auth.getSession(), 15000);
       return data.session?.user ? { id: data.session.user.id, email: data.session.user.email } : null;
     },
     onAuth(cb) {
@@ -89,10 +107,10 @@ async function supabaseBackend() {
       });
     },
     async signUp(email, password, username, name) {
-      const data = must(await sb.auth.signUp({ email, password, options: { data: { username, name }, emailRedirectTo: redirect() } }));
+      const data = must(await withTimeout(sb.auth.signUp({ email, password, options: { data: { username, name }, emailRedirectTo: redirect() } }), 25000));
       return { needsConfirm: !data.session };
     },
-    async signIn(email, password) { must(await sb.auth.signInWithPassword({ email, password })); },
+    async signIn(email, password) { must(await withTimeout(sb.auth.signInWithPassword({ email, password }), 25000)); },
     async signOut() { await sb.auth.signOut(); },
     async resetPassword(email) { must(await sb.auth.resetPasswordForEmail(email, { redirectTo: redirect() })); },
     async updatePassword(password) { must(await sb.auth.updateUser({ password })); },
@@ -466,9 +484,15 @@ export function initCloud() {
     } catch (err) {
       console.warn('Bitweg: Konto-Dienst nicht erreichbar', err);
       api = null;
+      ready = null; // naechster Versuch darf neu laden
       return null;
     }
-    user = await api.session();
+    try {
+      user = await api.session();
+    } catch (err) {
+      console.warn('Bitweg: Sitzung nicht lesbar', err);
+      user = null;
+    }
     if (user) {
       try { await syncAfterLogin(); } catch (err) { console.warn(err); }
       startLive();
