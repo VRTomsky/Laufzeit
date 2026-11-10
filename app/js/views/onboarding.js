@@ -222,7 +222,7 @@ const STEPS = {
         h('p', { class: 'muted' }, t('Hi, ich bin Bit. Bevor es losgeht, stelle ich dir ein paar kurze Fragen. Dann passt dein Kurs genau zu dir.', 'Hi, I\'m Bit. Before we start, I\'ll ask you a few quick questions. Then your course fits you perfectly.')),
         h('div', { class: 'onb-hero-actions' },
           h('button', { type: 'button', class: 'btn btn-go', onclick: () => go('langs') }, t('Los geht’s', 'Let’s go')),
-          CLOUD_ENABLED ? h('a', { class: 'btn btn-sky', href: '#/konto' }, t('Ich habe schon ein Konto', 'I already have an account')) : null,
+          CLOUD_ENABLED && !currentUser() ? h('a', { class: 'btn btn-sky', href: '#/konto' }, t('Ich habe schon ein Konto', 'I already have an account')) : null,
           desktopBtn,
           h('label', { class: 'btn btn-ghost' }, t('Sicherung aus Datei laden', 'Load backup from file'), fileInput)))));
     // Gibt es Sicherungen auf dem Desktop? Dann die neueste direkt anbieten

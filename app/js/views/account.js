@@ -41,7 +41,22 @@ function showError(box, err) {
 /** Nach dem Login: weiter in die App (oder zur Einfuehrung, falls noch nicht gemacht) */
 function done(msg) {
   toast(msg);
-  location.hash = store.state.onboarded ? '#/freunde' : '#/start';
+  enterApp('#/freunde');
+}
+
+/** Eingeloggt: direkt in die App. Wer ein Konto hat, muss nicht nochmal durch die Einfuehrung
+ *  (sonst landete man nach "Eingeloggt" wieder auf der Startseite, z. B. am iPhone). */
+function enterApp(target) {
+  if (!store.state.onboarded) {
+    store.update(s => {
+      s.onboarded = true;
+      if (!s.courses.length) s.courses = [s.activeLang || 'python'];
+      if (!s.courses.includes(s.activeLang)) s.activeLang = s.courses[0];
+    });
+    target = '#/pfad';
+  }
+  if (location.hash === target) window.dispatchEvent(new HashChangeEvent('hashchange'));
+  else location.hash = target;
 }
 
 function notConfigured() {
@@ -120,7 +135,9 @@ function renderRegister() {
             h('div', { class: 'auth-actions' }, h('a', { class: 'btn btn-sky', href: '#/konto' }, t('Zum Login', 'Go to login'))), 'happy');
           return;
         }
-        done(t('Konto erstellt. Willkommen!', 'Account created. Welcome!'));
+        // Neues Konto: Einfuehrung (Kurs, Ziele) noch machen, falls nicht schon passiert
+        toast(t('Konto erstellt. Willkommen!', 'Account created. Welcome!'));
+        location.hash = store.state.onboarded ? '#/freunde' : '#/start';
       } catch (ex) {
         showError(err, ex);
         btn.disabled = false;
@@ -214,7 +231,7 @@ export async function renderAccount(sub) {
   if (!location.hash.startsWith('#/konto')) return; // inzwischen woanders hin
   if (!backend) { offline(sub); return; }
   if (sub === 'neues-passwort') { renderNewPassword(); return; }
-  if (currentUser()) { location.replace('#/profil'); return; }
+  if (currentUser()) { enterApp('#/profil'); return; }
   if (sub === 'registrieren') renderRegister();
   else if (sub === 'passwort') renderForgot();
   else renderLogin();
