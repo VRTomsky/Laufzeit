@@ -5,6 +5,6 @@
 export const SUPABASE_URL = 'https://jpqpkoihjjumncilonik.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_eOxIi__DykPyLhE2UscLPA_zynPJqP3';
 
-export const REPO_URL = 'https://github.com/VRTomsky/Laufzeit';
-export const DOWNLOAD_URL = 'https://github.com/VRTomsky/Laufzeit/archive/refs/heads/main.zip';
-export const WEB_URL = 'https://vrtomsky.github.io/Laufzeit/';
+export const REPO_URL = 'https://github.com/VRTomsky/Bitweg';
+export const DOWNLOAD_URL = 'https://github.com/VRTomsky/Bitweg/archive/refs/heads/main.zip';
+export const WEB_URL = 'https://bitweg.de/';

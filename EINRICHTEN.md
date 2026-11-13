@@ -28,9 +28,9 @@ Damit Registrieren, Freunde und Nachrichten funktionieren, braucht Bitweg eine D
 
    Warum aus? Supabase schickt kostenlos nur sehr wenige E-Mails pro Stunde. Mit „aus“ funktioniert die Registrierung sofort, ohne Bestätigungsmail. „Passwort vergessen“ schickt trotzdem eine E-Mail.
 2. **Authentication**, dann **URL Configuration**:
-   - **Site URL**: `https://vrtomsky.github.io/Laufzeit/`
+   - **Site URL**: `https://bitweg.de/`
    - **Redirect URLs** hinzufügen:
-     - `https://vrtomsky.github.io/Laufzeit/`
+     - `https://bitweg.de/`
      - `http://127.0.0.1:5741/`
 
 ## 4. Zugangsdaten an Claude geben

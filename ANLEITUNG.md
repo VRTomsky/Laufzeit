@@ -74,7 +74,7 @@ Unter **Profil, Profil bearbeiten** stellst du Name, Benutzername, „Über mich
 
 ## Online-Version, Konten und Freunde
 
-- **Online:** https://vrtomsky.github.io/Laufzeit/ (GitHub-Repo `VRTomsky/Laufzeit`). Jeder Push auf `main` veröffentlicht `app/` neu, über `.github/workflows/pages.yml`.
+- **Online:** https://bitweg.de/ (GitHub-Repo `VRTomsky/Bitweg`). Jeder Push auf `main` veröffentlicht `app/` neu, über `.github/workflows/pages.yml`.
 - **Name:** Seit November 2026 heißt die App **Bitweg** (laufzeit.de war vergeben, bitweg.de und bitweg.com waren frei). Ordner, Repo, Server-Kopfzeile `X-Laufzeit` und die Speicher-Schlüssel `laufzeit.*` heißen absichtlich weiter so, damit kein Fortschritt verloren geht.
 - **Handy:** Die Seite ist eine PWA (`manifest.webmanifest`, `sw.js`, Icons in `img/`). In Chrome: Menü → „App installieren“. Unten erscheint eine Leiste mit allen Bereichen.
 - **Gruppenchats:** `views/groups.js`, Datenbank `supabase/03-gruppen.sql`. Chat-Fenster für Freunde und Gruppen teilen sich `views/chatbox.js` (Scrollen, Anhänge, Bildvorschau mit Zoom: Mausrad zur Mausposition, ziehen, Doppelklick, auf dem Handy zwei Finger).
