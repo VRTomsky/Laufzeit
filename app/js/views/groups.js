@@ -135,7 +135,7 @@ function openGroupEditor(info, onChange) {
       onRemove: () => { draft[key] = null; paint(); },
     });
   }
-  const bannerPick = picker(t('Banner wählen', 'Choose banner'), 1200, 320, 'banner');
+  const bannerPick = picker(t('Banner wählen', 'Choose banner'), 1200, 400, 'banner');
   const avatarPick = picker(t('Bild wählen', 'Choose picture'), 256, 256, 'avatar');
   const bannerZone = h('div', { class: 'field' }, h('span', {}, 'Banner'), bannerPrev, bannerPick.el);
   const avatarZone = h('div', { class: 'field' }, h('span', {}, t('Gruppenbild', 'Group picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, avatarPick.el));

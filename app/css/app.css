@@ -823,13 +823,15 @@ html.no-scroll, html.no-scroll body { overflow: hidden; }
 /* Profil-Kopf */
 .prof-card { border: var(--line) solid var(--rule); border-radius: var(--r4); overflow: hidden; margin-bottom: var(--s6); }
 .prof-banner {
-  height: 190px;
+  height: auto;
+  aspect-ratio: 3 / 1;
+  min-height: 150px;
   background: var(--accent-soft) center / cover no-repeat;
   display: grid;
   place-items: center;
 }
 .prof-banner-empty { font-weight: 800; color: var(--ink-3); font-size: var(--text-sm); opacity: .7; }
-.prof-banner.is-small { height: 110px; border-radius: var(--r2); border: var(--line) dashed var(--rule-2); }
+.prof-banner.is-small { height: auto; min-height: 0; aspect-ratio: 3 / 1; border-radius: var(--r2); border: var(--line) dashed var(--rule-2); }
 .prof-banner.is-small:not(.is-empty) { border-style: solid; }
 .prof-body {
   display: grid;
@@ -888,7 +890,7 @@ small.is-bad { color: var(--coral-ink); }
 .backup-list small { color: var(--ink-3); font-size: var(--text-xs); }
 
 @media (max-width: 820px) {
-  .prof-banner { height: 130px; }
+  .prof-banner { min-height: 120px; }
   .prof-body { grid-template-columns: 1fr; padding: 0 var(--s4) var(--s4); gap: var(--s2); }
   .prof-avatar { margin-top: -56px; }
   .prof-avatar .avatar { width: 104px; height: 104px; }
@@ -960,3 +962,8 @@ dialog.crop-dialog .row-actions .btn { width: auto; }
 .lesson-mode.is-gold { color: var(--gold-edge); }
 .lesson-mode.is-lost { color: var(--coral-ink); }
 .gold-medal { display: grid; place-items: center; width: 84px; height: 84px; margin: 0 auto -18px; position: relative; z-index: 2; border-radius: 50%; background: var(--gold); color: var(--gold-ink); box-shadow: 0 6px 0 var(--gold-edge); animation: pop-in .4s var(--ease-back); }
+
+/* Handy: "Profil bearbeiten" passt neben das Profilbild */
+@media (max-width: 520px) {
+  .prof-body .prof-edit { min-width: 0; max-width: 100%; padding: 8px 14px; font-size: var(--text-sm); white-space: normal; }
+}

@@ -1,7 +1,7 @@
 // Service Worker fuer Bitweg: macht die Seite installierbar und zeigt sie auch ohne Netz.
 // Strategie "Netz zuerst": Updates kommen sofort an, der Zwischenspeicher ist nur der Notfall.
 
-const CACHE = 'bitweg-v6';
+const CACHE = 'bitweg-v7';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {

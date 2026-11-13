@@ -114,7 +114,12 @@ export async function cropImage(file, outW, outH, { round = false, title = t('Au
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, -x / scale, -y / scale, frameW / scale, frameH / scale, 0, 0, outW, outH);
-      finish(canvas.toDataURL('image/jpeg', 0.88));
+      // Datenbank erlaubt Banner bis 600 000 und Profilbilder bis 150 000 Zeichen: notfalls Qualitaet senken
+      const limit = outW * outH > 200000 ? 560000 : 140000;
+      let q = 0.88;
+      let url = canvas.toDataURL('image/jpeg', q);
+      while (url.length > limit && q > 0.4) { q -= 0.08; url = canvas.toDataURL('image/jpeg', q); }
+      finish(url);
     }
 
     const dlg = h('dialog', { class: 'confirm crop-dialog' },

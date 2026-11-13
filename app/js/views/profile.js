@@ -80,7 +80,7 @@ function openEditor() {
       onRemove: () => { draft[key] = null; paint(); },
     });
   }
-  const bannerPick = picker(t('Titelbild wählen', 'Choose banner'), 1200, 320, 'banner');
+  const bannerPick = picker(t('Titelbild wählen', 'Choose banner'), 1200, 400, 'banner');
   const avatarPick = picker(t('Profilbild wählen', 'Choose picture'), 256, 256, 'avatar');
   const bannerZone = h('div', { class: 'field' }, h('span', {}, t('Titelbild', 'Banner')), bannerPrev, bannerPick.el);
   const avatarZone = h('div', { class: 'field' }, h('span', {}, t('Profilbild', 'Profile picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, avatarPick.el));
