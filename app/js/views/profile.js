@@ -9,7 +9,7 @@ import { COURSES, LANG_IDS } from '../content/index.js';
 import { BADGES, levelInfo, currentStreak, courseProgress } from '../gamification.js';
 import { applyTheme } from '../theme.js';
 import { GOALS } from '../personalize.js';
-import { cropImage } from '../cropper.js';
+import { imagePicker, pasteImagesInto } from '../imagepick.js';
 import { backupNow, backupInfo, listBackups, loadBackup, onBackupChange } from '../backup.js';
 import { IS_WEB } from '../env.js';
 import { CLOUD_ENABLED, currentUser, myProfile, saveProfile, logout, deleteAccount, changePassword, changeEmail, blockedIds, unblockUser, germanError, initCloud, profilesById } from '../cloud.js';
@@ -73,25 +73,17 @@ function openEditor() {
   }
 
   function picker(label, w, hgt, key) {
-    const input = h('input', {
-      type: 'file', accept: 'image/*', class: 'sr-only',
-      onchange: async e => {
-        try {
-          const result = await cropImage(e.target.files[0], w, hgt, { round: key === 'avatar', title: key === 'avatar' ? 'Profilbild zuschneiden' : 'Titelbild zuschneiden' });
-          if (result) {
-            draft[key] = result;
-            paint();
-          }
-        } catch (err) {
-          toast('Bild nicht übernommen', err.message);
-        }
-        e.target.value = '';
-      },
+    return imagePicker({
+      label, w, h: hgt, round: key === 'avatar',
+      title: key === 'avatar' ? t('Profilbild zuschneiden', 'Crop profile picture') : t('Titelbild zuschneiden', 'Crop banner'),
+      onPick: url => { draft[key] = url; paint(); },
+      onRemove: () => { draft[key] = null; paint(); },
     });
-    return h('div', { class: 'row-actions' },
-      h('label', { class: 'btn btn-small' }, label, input),
-      h('button', { type: 'button', class: 'btn btn-small btn-ghost', onclick: () => { draft[key] = null; paint(); } }, 'Entfernen'));
   }
+  const bannerPick = picker(t('Titelbild wählen', 'Choose banner'), 1200, 320, 'banner');
+  const avatarPick = picker(t('Profilbild wählen', 'Choose picture'), 256, 256, 'avatar');
+  const bannerZone = h('div', { class: 'field' }, h('span', {}, t('Titelbild', 'Banner')), bannerPrev, bannerPick.el);
+  const avatarZone = h('div', { class: 'field' }, h('span', {}, t('Profilbild', 'Profile picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, avatarPick.el));
 
   const nameIn = h('input', { class: 'text-input', value: draft.name, maxlength: '40', placeholder: 'z. B. Alex', 'aria-label': 'Name' });
   const userIn = h('input', { class: 'text-input', value: draft.username, maxlength: '20', placeholder: 'z. B. alex_codet', 'aria-label': 'Benutzername', spellcheck: 'false', autocapitalize: 'off' });
@@ -102,8 +94,9 @@ function openEditor() {
   let release = () => {};
   const dlg = h('dialog', { class: 'confirm prof-dialog' },
     h('h2', {}, t('Profil bearbeiten', 'Edit profile')),
-    h('div', { class: 'field' }, h('span', {}, 'Titelbild'), bannerPrev, picker('Titelbild wählen', 1200, 320, 'banner')),
-    h('div', { class: 'field' }, h('span', {}, t('Profilbild', 'Profile picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, picker('Profilbild wählen', 256, 256, 'avatar'))),
+    bannerZone,
+    avatarZone,
+    h('p', { class: 'muted img-paste-hint' }, t('Tipp: Bild kopieren und hier mit Strg+V einfügen. Es landet beim Bereich, über dem die Maus zuletzt war.', 'Tip: copy an image and paste it here with Ctrl+V. It goes to the area your mouse was over last.')),
     h('label', { class: 'field' }, h('span', {}, 'Name'), nameIn),
     h('label', { class: 'field' }, h('span', {}, 'Benutzername'), userIn, userHint),
     h('label', { class: 'field' }, h('span', {}, 'Über mich'), bioIn),
@@ -154,6 +147,7 @@ function openEditor() {
     window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
   dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  pasteImagesInto(dlg, [{ picker: avatarPick, zone: avatarZone }, { picker: bannerPick, zone: bannerZone }]);
   paint();
   release = showModal(dlg);
   nameIn.focus();

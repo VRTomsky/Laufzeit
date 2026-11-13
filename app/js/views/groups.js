@@ -6,7 +6,7 @@ import { icon } from '../icons.js';
 import { bit } from '../mascot.js';
 import { chatBox, timeText } from './chatbox.js';
 import { personAvatar } from './friends.js';
-import { cropImage } from '../cropper.js';
+import { imagePicker, pasteImagesInto } from '../imagepick.js';
 import {
   CLOUD_ENABLED, initCloud, currentUser, germanError, loadFriends, onLive,
   groupsAvailable, groupProfileAvailable, loadGroups, groupUnread, createGroup, groupDetails, addGroupMembers,
@@ -128,20 +128,17 @@ function openGroupEditor(info, onChange) {
       : h('span', { class: 'avatar is-bit', style: { width: '96px', height: '96px' }, html: bit({ size: 70 }) }));
   }
   function picker(label, w, hgt, key) {
-    const input = h('input', {
-      type: 'file', accept: 'image/*', class: 'sr-only',
-      onchange: async e => {
-        try {
-          const result = await cropImage(e.target.files[0], w, hgt, { round: key === 'avatar', title: key === 'avatar' ? t('Gruppenbild zuschneiden', 'Crop group picture') : t('Banner zuschneiden', 'Crop banner') });
-          if (result) { draft[key] = result; paint(); }
-        } catch (err) { toast(t('Bild nicht übernommen', 'Image not used'), err.message); }
-        e.target.value = '';
-      },
+    return imagePicker({
+      label, w, h: hgt, round: key === 'avatar',
+      title: key === 'avatar' ? t('Gruppenbild zuschneiden', 'Crop group picture') : t('Banner zuschneiden', 'Crop banner'),
+      onPick: url => { draft[key] = url; paint(); },
+      onRemove: () => { draft[key] = null; paint(); },
     });
-    return h('div', { class: 'row-actions' },
-      h('label', { class: 'btn btn-small' }, label, input),
-      h('button', { type: 'button', class: 'btn btn-small btn-ghost', onclick: () => { draft[key] = null; paint(); } }, t('Entfernen', 'Remove')));
   }
+  const bannerPick = picker(t('Banner wählen', 'Choose banner'), 1200, 320, 'banner');
+  const avatarPick = picker(t('Bild wählen', 'Choose picture'), 256, 256, 'avatar');
+  const bannerZone = h('div', { class: 'field' }, h('span', {}, 'Banner'), bannerPrev, bannerPick.el);
+  const avatarZone = h('div', { class: 'field' }, h('span', {}, t('Gruppenbild', 'Group picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, avatarPick.el));
   const nameIn = h('input', { class: 'text-input', maxlength: '40', value: info.name, 'aria-label': 'Name' });
   const bioIn = h('textarea', { class: 'text-input', maxlength: '160', rows: '3', placeholder: t('Worum geht es in der Gruppe?', 'What is the group about?'), 'aria-label': 'Bio' });
   bioIn.value = info.bio || '';
@@ -151,8 +148,9 @@ function openGroupEditor(info, onChange) {
   const close = () => { dlg.close(); release(); dlg.remove(); };
   const dlg = h('dialog', { class: 'confirm prof-dialog' },
     h('h2', {}, t('Gruppe bearbeiten', 'Edit group')),
-    full ? h('div', { class: 'field' }, h('span', {}, 'Banner'), bannerPrev, picker(t('Banner wählen', 'Choose banner'), 1200, 320, 'banner')) : null,
-    full ? h('div', { class: 'field' }, h('span', {}, t('Gruppenbild', 'Group picture')), h('div', { class: 'edit-avatar-row' }, avatarPrev, picker(t('Bild wählen', 'Choose picture'), 256, 256, 'avatar'))) : null,
+    full ? bannerZone : null,
+    full ? avatarZone : null,
+    full ? h('p', { class: 'muted img-paste-hint' }, t('Tipp: Bild kopieren und hier mit Strg+V einfügen. Es landet beim Bereich, über dem die Maus zuletzt war.', 'Tip: copy an image and paste it here with Ctrl+V. It goes to the area your mouse was over last.')) : null,
     h('label', { class: 'field' }, h('span', {}, 'Name'), nameIn),
     full ? h('label', { class: 'field' }, h('span', {}, 'Bio'), bioIn) : h('p', { class: 'muted' }, t('Gruppenbild, Banner, Bio und Admins gibt es, sobald der Betreiber supabase/04-gruppen-profil.sql ausgeführt hat.', 'Group picture, banner, bio and admins become available once the operator has run supabase/04-gruppen-profil.sql.')),
     err,
@@ -172,6 +170,7 @@ function openGroupEditor(info, onChange) {
     }
   };
   dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  if (full) pasteImagesInto(dlg, [{ picker: avatarPick, zone: avatarZone }, { picker: bannerPick, zone: bannerZone }]);
   paint();
   release = showModal(dlg);
 }

@@ -485,3 +485,9 @@ a, button, [role="button"], label { -webkit-tap-highlight-color: transparent; to
   .member-list .pick-row > .member-actions { flex: 1 0 100%; box-sizing: border-box; padding-left: 48px; }
   .member-actions .btn { padding: 6px 10px; }
 }
+
+.img-paste-hint { font-size: var(--text-sm); margin: 0; }
+@media (pointer: coarse) { .img-paste-hint { display: none; } }
+dialog.confirm .row-actions.img-pick, .row-actions.img-pick { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--s2); justify-content: flex-start; }
+.row-actions.img-pick > * { width: auto; flex: 0 0 auto; }
+dialog.confirm .row-actions.img-pick > .btn { width: auto; flex: 1 1 auto; margin: 0; }
