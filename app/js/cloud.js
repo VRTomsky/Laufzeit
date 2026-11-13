@@ -113,7 +113,9 @@ async function supabaseBackend() {
     async signIn(email, password) { must(await withTimeout(sb.auth.signInWithPassword({ email, password }), 25000)); },
     async signOut() { await sb.auth.signOut(); },
     async resetPassword(email) { must(await sb.auth.resetPasswordForEmail(email, { redirectTo: redirect() })); },
-    async updatePassword(password) { must(await sb.auth.updateUser({ password })); },
+    async updatePassword(password) { must(await withTimeout(sb.auth.updateUser({ password }), 25000)); },
+    async verifyPassword(password) { must(await withTimeout(sb.auth.signInWithPassword({ email: user.email, password }), 25000)); },
+    async updateEmail(email) { must(await withTimeout(sb.auth.updateUser({ email }, { emailRedirectTo: redirect() }), 25000)); },
     async deleteAccount() { must(await sb.rpc('delete_account')); await sb.auth.signOut(); },
     async usernameAvailable(name) { return Boolean(must(await sb.rpc('username_available', { name }))); },
 
@@ -175,24 +177,39 @@ async function supabaseBackend() {
     async sendNudge(otherId, kind, streak = null) { must(await sb.from('nudges').insert({ sender: uid(), recipient: otherId, kind, streak })); },
     async markNudgesSeen(ids) { if (ids.length) must(await sb.from('nudges').update({ seen_at: new Date().toISOString() }).in('id', ids)); },
 
-    /* ---------- Gruppen (supabase/03-gruppen.sql) */
+    /* ---------- Gruppen (supabase/03-gruppen.sql, Bild/Bio/Admins aus 04-gruppen-profil.sql) */
+    async g04(run) {
+      let res = await run();
+      if (res.error && groupProfileReady && /avatar|banner|bio|role|column/i.test(res.error.message || '')) {
+        groupProfileReady = false;
+        res = await run();
+      }
+      return res;
+    },
     async groups() {
       const mem = must(await sb.from('group_members').select('group_id,last_read_at').eq('user_id', uid()));
       if (!mem.length) return [];
       const ids = mem.map(m => m.group_id);
       const [gs, last] = await Promise.all([
-        sb.from('groups').select('id,name,owner,created_at').in('id', ids),
+        self.g04(() => sb.from('groups').select(groupProfileReady ? 'id,name,owner,created_at,avatar' : 'id,name,owner,created_at').in('id', ids)),
         sb.from('group_messages').select('id,group_id,sender,body,attachment,created_at').in('group_id', ids).order('created_at', { ascending: false }).limit(400),
       ]);
       const msgs = must(last);
       return must(gs).map(g => ({ ...g, last_read_at: mem.find(m => m.group_id === g.id)?.last_read_at, messages: msgs.filter(m => m.group_id === g.id) }));
     },
-    async groupInfo(gid) { return must(await sb.from('groups').select('id,name,owner,created_at').eq('id', gid).maybeSingle()); },
-    async groupMembers(gid) { return must(await sb.from('group_members').select('user_id,joined_at,added_by').eq('group_id', gid)); },
+    async groupInfo(gid) { return must(await self.g04(() => sb.from('groups').select(groupProfileReady ? 'id,name,owner,created_at,bio,avatar,banner' : 'id,name,owner,created_at').eq('id', gid).maybeSingle())); },
+    async groupMembers(gid) { return must(await self.g04(() => sb.from('group_members').select(groupProfileReady ? 'user_id,joined_at,added_by,role' : 'user_id,joined_at,added_by').eq('group_id', gid))); },
+    async updateGroup(gid, fields) {
+      const rows = must(await sb.from('groups').update(fields).eq('id', gid).select('id'));
+      if (!rows.length) throw new Error(t('Das dürfen nur Admins der Gruppe.', 'Only group admins can do that.'));
+    },
+    async setGroupRole(gid, userId, role) {
+      const rows = must(await sb.from('group_members').update({ role }).eq('group_id', gid).eq('user_id', userId).select('user_id'));
+      if (!rows.length) throw new Error(t('Admins ernennen darf nur, wer die Gruppe gegründet hat.', 'Only the group founder can choose admins.'));
+    },
     async createGroup(name) { return must(await sb.from('groups').insert({ name, owner: uid() }).select('id,name,owner,created_at').single()); },
     async addGroupMembers(gid, ids) { if (ids.length) must(await sb.from('group_members').insert(ids.map(user_id => ({ group_id: gid, user_id, added_by: uid() })))); },
     async removeGroupMember(gid, userId) { must(await sb.from('group_members').delete().eq('group_id', gid).eq('user_id', userId)); },
-    async renameGroup(gid, name) { must(await sb.from('groups').update({ name }).eq('id', gid)); },
     async groupMessages(gid, limit = 200) {
       const rows = must(await sb.from('group_messages').select('id,group_id,sender,body,attachment,created_at').eq('group_id', gid).order('created_at', { ascending: false }).limit(limit));
       return rows.reverse();
@@ -501,6 +518,7 @@ export function initCloud() {
     }
     api.onAuth(async (event, u) => {
       if (event === 'PASSWORD_RECOVERY') { location.hash = '#/konto/neues-passwort'; return; }
+      if (event === 'USER_UPDATED' && u && u.id === user?.id) { user = u; emit(); return; }
       if (event === 'SIGNED_IN' && u && !manualAuth && u.id !== user?.id) {
         user = u;
         try { await syncAfterLogin(); } catch (err) { console.warn(err); }
@@ -588,6 +606,34 @@ export async function sendReset(email) { await (await need()).resetPassword(emai
 export async function setNewPassword(pw) {
   if (pw.length < 8) throw new Error(t('Das Passwort ist zu kurz. Nimm mindestens 8 Zeichen.', 'The password is too short. Use at least 8 characters.'));
   await (await need()).updatePassword(pw);
+}
+
+const BAD_LOGIN = /invalid login credentials|invalid_credentials/i;
+
+/** Passwort aendern, wenn man das alte kennt */
+export async function changePassword(current, next) {
+  if (next.length < 8) throw new Error(t('Das neue Passwort ist zu kurz. Nimm mindestens 8 Zeichen.', 'The new password is too short. Use at least 8 characters.'));
+  if (next === current) throw new Error(t('Das neue Passwort muss anders sein als das alte.', 'The new password must be different from the old one.'));
+  const a = await need();
+  try { await a.verifyPassword(current); } catch (err) {
+    if (BAD_LOGIN.test(String(err?.message || err?.code))) throw new Error(t('Das aktuelle Passwort stimmt nicht.', 'Your current password is wrong.'));
+    throw err;
+  }
+  await a.updatePassword(next);
+}
+
+/** E-Mail aendern: Supabase schickt Bestaetigungs-Links, erst danach gilt die neue Adresse */
+export async function changeEmail(email, current) {
+  const clean = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error(t('Das sieht nicht nach einer E-Mail-Adresse aus.', 'That doesn\'t look like an email address.'));
+  if (clean === (user?.email || '').toLowerCase()) throw new Error(t('Das ist schon deine E-Mail-Adresse.', 'That already is your email address.'));
+  const a = await need();
+  try { await a.verifyPassword(current); } catch (err) {
+    if (BAD_LOGIN.test(String(err?.message || err?.code))) throw new Error(t('Das Passwort stimmt nicht.', 'The password is wrong.'));
+    throw err;
+  }
+  await a.updateEmail(clean);
+  return clean;
 }
 
 export async function deleteAccount() {
@@ -755,7 +801,9 @@ export async function markNudgesSeen(ids) { await (await need()).markNudgesSeen(
 /* ================================================================ Gruppen */
 
 let groupsReady = true;
+let groupProfileReady = true;   // false, solange 04-gruppen-profil.sql fehlt
 export const groupsAvailable = () => groupsReady;
+export const groupProfileAvailable = () => groupProfileReady;
 const missingTable = err => /group|relation .* does not exist|PGRST20[05]|42P01|schema cache/i.test(String(err?.message || err?.code || err));
 
 /** Eigene Gruppen; fehlen die Tabellen (03-gruppen.sql noch nicht ausgefuehrt), leere Liste */
@@ -803,10 +851,18 @@ export async function groupDetails(gid) {
 export async function addGroupMembers(gid, ids) { await (await need()).addGroupMembers(gid, ids); }
 export async function removeGroupMember(gid, userId) { await (await need()).removeGroupMember(gid, userId); refreshCounts(); }
 export async function leaveGroup(gid) { await (await need()).removeGroupMember(gid, user.id); refreshCounts(); }
-export async function renameGroup(gid, name) {
-  const clean = name.trim().slice(0, 40);
+/** Name, Bio, Gruppenbild und Banner (Bilder als verkleinerte JPEG-data-URL wie beim Profil) */
+export async function updateGroupProfile(gid, { name, bio, avatar, banner }) {
+  const clean = String(name || '').trim().slice(0, 40);
   if (!clean) throw new Error(t('Gib der Gruppe einen Namen.', 'Give the group a name.'));
-  await (await need()).renameGroup(gid, clean);
+  const fields = { name: clean };
+  if (groupProfileReady) Object.assign(fields, { bio: String(bio || '').trim().slice(0, 160), avatar: avatar || null, banner: banner || null });
+  await (await need()).updateGroup(gid, fields);
+}
+export const renameGroup = (gid, name) => updateGroupProfile(gid, { name });
+export async function setGroupRole(gid, userId, role) {
+  if (!groupProfileReady) throw new Error(t('Admins gehen erst, wenn der Betreiber supabase/04-gruppen-profil.sql ausgeführt hat.', 'Admins only work once the operator has run supabase/04-gruppen-profil.sql.'));
+  await (await need()).setGroupRole(gid, userId, role === 'admin' ? 'admin' : 'member');
 }
 export const loadGroupThread = async gid => (await need()).groupMessages(gid);
 export async function sendGroupMessage(gid, body, attachment = null) {

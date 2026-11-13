@@ -231,7 +231,7 @@ export async function renderAccount(sub) {
   if (!location.hash.startsWith('#/konto')) return; // inzwischen woanders hin
   if (!backend) { offline(sub); return; }
   if (sub === 'neues-passwort') { renderNewPassword(); return; }
-  if (currentUser()) { enterApp('#/profil'); return; }
+  if (currentUser() && sub !== 'passwort') { enterApp('#/profil'); return; }
   if (sub === 'registrieren') renderRegister();
   else if (sub === 'passwort') renderForgot();
   else renderLogin();

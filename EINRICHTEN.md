@@ -59,6 +59,20 @@ Erst nach Schritt 5 ausführen, die Gruppen nutzen denselben Speicher.
 
 Solange 03 nicht ausgeführt ist, zeigt die App statt der Gruppen einen Hinweis. Der normale Chat läuft trotzdem.
 
+## 7. Gruppenbild, Banner, Bio und Admins (Erweiterung)
+
+Erst nach Schritt 6 ausführen.
+
+1. **SQL Editor**, **New query**.
+2. Inhalt von `supabase/04-gruppen-profil.sql` einfügen, **Run**.
+3. Fertig. In einer Gruppe oben auf den Namen tippen: Wer die Gruppe gegründet hat, kann Mitglieder **zum Admin** machen. Gründer und Admins können Gruppenbild, Banner, Name und Bio ändern. Admins können normale Mitglieder entfernen, Admins entfernen kann nur der Gründer.
+
+Ohne 04 laufen Gruppen weiter wie bisher, nur ohne Bild, Bio und Admins.
+
+## E-Mail und Passwort ändern
+
+Geht in der App unter **Profil → Konto**, jeweils mit dem aktuellen Passwort. Bei einer neuen E-Mail schickt Supabase Bestätigungs-Links (meist an alte und neue Adresse). Wie viele Mails pro Stunde rausgehen, hängt am E-Mail-Versand: Mit dem eingebauten Supabase-Versand sind es nur wenige, mit eigenem SMTP (Authentication → Emails → SMTP Settings) deutlich mehr.
+
 ## Danach: Admin-Aufgaben
 
 - **Meldungen ansehen:** Supabase, **Table Editor**, Tabelle `reports`. Dort steht, wer wen warum gemeldet hat.

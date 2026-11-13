@@ -86,6 +86,8 @@ export function createMockBackend() {
     async signOut() { db.session = null; save(); fire('SIGNED_OUT', null); },
     async resetPassword() { return delay(); },
     async updatePassword(pw) { me().password = pw; save(); },
+    async verifyPassword(pw) { if (me().password !== pw) throw new Error('Invalid login credentials'); return delay(); },
+    async updateEmail(email) { me().email = email; save(); return delay(); },
     async deleteAccount() {
       const id = uid();
       delete db.users[id];
@@ -191,7 +193,18 @@ export function createMockBackend() {
       else if (g && g.owner === userId) g.owner = rest[0].user_id;
       save();
     },
-    async renameGroup(gid, name) { const g = db.groups.find(x => x.id === gid); if (g) g.name = name; save(); },
+    async updateGroup(gid, fields) {
+      const g = db.groups.find(x => x.id === gid);
+      const m = db.groupMembers.find(x => x.group_id === gid && x.user_id === uid());
+      if (!g || !(g.owner === uid() || m?.role === 'admin')) throw new Error('Das dürfen nur Admins der Gruppe.');
+      Object.assign(g, fields); save(); return delay();
+    },
+    async setGroupRole(gid, userId, role) {
+      const g = db.groups.find(x => x.id === gid);
+      if (g?.owner !== uid()) throw new Error('Admins ernennen darf nur, wer die Gruppe gegründet hat.');
+      const m = db.groupMembers.find(x => x.group_id === gid && x.user_id === userId);
+      if (m) m.role = role; save(); return delay();
+    },
     async groupMessages(gid) { return delay(db.groupMessages.filter(m => m.group_id === gid)); },
     async sendGroup(gid, body, attachment = null) {
       if (!db.groupMembers.some(m => m.group_id === gid && m.user_id === uid())) throw new Error('new row violates row-level security policy');

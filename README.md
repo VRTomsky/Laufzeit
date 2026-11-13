@@ -23,7 +23,7 @@ Wie C++ und VS Code eingerichtet werden, steht in der App unter **Werkstatt**.
 
 - `app/` die Webseite (reines HTML, CSS und JavaScript, kein Build-Schritt)
 - `server.py` kleiner lokaler Server: liefert `app/` aus und führt Code auf dem PC aus (nur `127.0.0.1`)
-- `supabase/schema.sql`, `02-anhaenge.sql`, `03-gruppen.sql` Datenbank für Konten, Freunde, Nachrichten, Anhänge und Gruppen, mit Zugriffsregeln
+- `supabase/schema.sql`, `02-anhaenge.sql`, `03-gruppen.sql`, `04-gruppen-profil.sql` Datenbank für Konten, Freunde, Nachrichten, Anhänge und Gruppen, mit Zugriffsregeln
 - `ANLEITUNG.md` Bedienung und Technik, `LEHRPLAN.md` Inhalte, `EINRICHTEN.md` Konten einrichten
 
 ## Datenschutz

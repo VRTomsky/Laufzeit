@@ -12,7 +12,7 @@ import { GOALS } from '../personalize.js';
 import { cropImage } from '../cropper.js';
 import { backupNow, backupInfo, listBackups, loadBackup, onBackupChange } from '../backup.js';
 import { IS_WEB } from '../env.js';
-import { CLOUD_ENABLED, currentUser, myProfile, saveProfile, logout, deleteAccount, blockedIds, unblockUser, germanError, initCloud, profilesById } from '../cloud.js';
+import { CLOUD_ENABLED, currentUser, myProfile, saveProfile, logout, deleteAccount, changePassword, changeEmail, blockedIds, unblockUser, germanError, initCloud, profilesById } from '../cloud.js';
 
 const AGE_LABEL = { u13: t('Unter 13', 'Under 13'), '13-15': '13 bis 15', '16-18': '16 bis 18', '19+': t('19 oder älter', '19 or older') };
 const PRIOR_LABEL = { none: t('Noch nie programmiert', 'Never programmed'), blocks: t('Blöcke, z. B. Scratch', 'Blocks, e.g. Scratch'), python: 'Python', cfamily: t('C++, C# oder Java', 'C++, C# or Java'), other: t('Andere Sprache', 'Another language') };
@@ -332,7 +332,8 @@ function accountSection() {
     h('p', { class: 'muted' }, t('Dein Fortschritt wird automatisch im Konto gespeichert. Auf einem anderen Gerät einfach einloggen.', 'Your progress is saved to your account automatically. On another device, just log in.')),
     h('div', { class: 'row-actions' },
       h('a', { class: 'btn btn-sky', href: '#/freunde' }, t('Freunde', 'Friends')),
-      h('a', { class: 'btn', href: '#/konto/neues-passwort' }, t('Passwort ändern', 'Change password')),
+      h('button', { type: 'button', class: 'btn', onclick: () => openCredentials('password') }, t('Passwort ändern', 'Change password')),
+      h('button', { type: 'button', class: 'btn', onclick: () => openCredentials('email') }, t('E-Mail ändern', 'Change email')),
       h('button', {
         type: 'button', class: 'btn btn-ghost',
         onclick: async () => {
@@ -361,6 +362,60 @@ function accountSection() {
           },
         }, t('Konto löschen', 'Delete account')))));
   return sec;
+}
+
+/** Passwort oder E-Mail aendern. Beides nur mit dem aktuellen Passwort. */
+function openCredentials(kind) {
+  const isPw = kind === 'password';
+  const pwInput = (ph, auto) => h('input', { class: 'text-input', type: 'password', autocomplete: auto, placeholder: ph, required: true });
+  const current = pwInput(t('Dein jetziges Passwort', 'Your current password'), 'current-password');
+  const next = isPw ? pwInput(t('mindestens 8 Zeichen', 'at least 8 characters'), 'new-password') : null;
+  const next2 = isPw ? pwInput(t('nochmal', 'again'), 'new-password') : null;
+  const email = isPw ? null : h('input', { class: 'text-input', type: 'email', autocomplete: 'email', placeholder: 'neu@beispiel.de', required: true });
+  const err = h('p', { class: 'auth-error', role: 'alert', hidden: true });
+  const ok = h('button', { type: 'submit', class: 'btn btn-go' }, t('Speichern', 'Save'));
+  let release = () => {};
+  const close = () => { dlg.close(); release(); dlg.remove(); };
+  const form = h('form', {
+    class: 'auth-form',
+    onsubmit: async e => {
+      e.preventDefault();
+      err.hidden = true;
+      if (isPw && next.value !== next2.value) { err.hidden = false; err.textContent = t('Die beiden neuen Passwörter sind nicht gleich.', 'The two new passwords do not match.'); next2.focus(); return; }
+      ok.disabled = true;
+      ok.textContent = t('Einen Moment ...', 'One moment ...');
+      try {
+        if (isPw) {
+          await changePassword(current.value, next.value);
+          close();
+          toast(t('Passwort geändert', 'Password changed'), t('Ab jetzt gilt das neue Passwort, auch auf deinen anderen Geräten.', 'The new password applies from now on, on your other devices too.'));
+        } else {
+          const addr = await changeEmail(email.value, current.value);
+          dlg.replaceChildren(
+            h('h2', {}, t('Fast geschafft', 'Almost done')),
+            h('p', {}, t(`Wir haben einen Bestätigungs-Link an ${addr} geschickt, meist auch einen an deine alte Adresse. Klick auf den Link (bzw. beide), dann gilt die neue Adresse. Bis dahin loggst du dich mit der alten ein. Schau auch im Spam-Ordner nach.`, `We sent a confirmation link to ${addr}, usually one to your old address as well. Click the link (or both), then the new address is active. Until then, log in with the old one. Also check your spam folder.`)),
+            h('div', { class: 'row-actions' }, h('button', { type: 'button', class: 'btn btn-go', onclick: close }, 'OK')));
+        }
+      } catch (ex) {
+        err.hidden = false;
+        err.textContent = germanError(ex);
+        ok.disabled = false;
+        ok.textContent = t('Speichern', 'Save');
+      }
+    },
+  },
+  isPw ? null : h('label', { class: 'field' }, h('span', {}, t('Neue E-Mail-Adresse', 'New email address')), email,
+    h('small', { class: 'muted' }, t(`Jetzt: ${currentUser()?.email || ''}`, `Now: ${currentUser()?.email || ''}`))),
+  h('label', { class: 'field' }, h('span', {}, isPw ? t('Aktuelles Passwort', 'Current password') : t('Passwort zur Bestätigung', 'Password to confirm')), current),
+  isPw ? h('label', { class: 'field' }, h('span', {}, t('Neues Passwort', 'New password')), next) : null,
+  isPw ? h('label', { class: 'field' }, h('span', {}, t('Neues Passwort wiederholen', 'Repeat new password')), next2) : null,
+  err,
+  h('p', { class: 'auth-links' }, isPw ? h('a', { href: '#/konto/passwort', onclick: () => close() }, t('Altes Passwort vergessen?', 'Forgot your old password?')) : null),
+  h('div', { class: 'row-actions' }, h('button', { type: 'button', class: 'btn', onclick: () => close() }, t('Abbrechen', 'Cancel')), ok));
+  const dlg = h('dialog', { class: 'confirm prof-dialog' }, h('h2', {}, isPw ? t('Passwort ändern', 'Change password') : t('E-Mail ändern', 'Change email')), form);
+  dlg.addEventListener('cancel', e => { e.preventDefault(); close(); });
+  release = showModal(dlg);
+  (isPw ? current : email).focus();
 }
 
 /** Online: keine Desktop-Sicherung, aber Datei-Export */
